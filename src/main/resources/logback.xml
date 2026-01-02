@@ -28,9 +28,8 @@
     </root>
 
     <!-- Для debug-режима: -->
-    <!--
-    <logger name="network.lab1" level="DEBUG" />
-    <logger name="network.lab1.server" level="TRACE" />
-    -->
+    <logger name="network.labs.lab1" level="DEBUG" />
+    <logger name="network.labs.lab1.server" level="TRACE" />
+
 
 </configuration>
