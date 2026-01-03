@@ -147,3 +147,228 @@ java.net.SocketException: Connection reset
 2026-01-03 00:58:46.742 [main] INFO  network.labs.lab1.server.TcpServer - Upload completed: test.txt ← /127.0.0.1:39285 (10712 bytes, {:.2f} KB/s)
 2026-01-03 00:58:56.303 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:39285] Received: sdd
 2026-01-03 00:59:01.295 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:39285] Received: echo sdsd
+2026-01-03 05:03:19.471 [main] INFO  network.labs.lab1.client.TcpClient - Client directory ensured: D:\untitled\client_files
+2026-01-03 05:03:19.493 [main] INFO  network.labs.lab1.client.TcpClient - Connecting to localhost:8888
+2026-01-03 05:03:19.494 [main] ERROR network.labs.lab1.client.TcpClient - Failed to connect to localhost:8888]
+java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:589)
+	at java.base/sun.nio.ch.Net.connect(Net.java:578)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:583)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:751)
+	at java.base/java.net.Socket.connect(Socket.java:686)
+	at java.base/java.net.Socket.<init>(Socket.java:555)
+	at java.base/java.net.Socket.<init>(Socket.java:324)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:43)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 05:03:46.786 [main] INFO  network.labs.lab1.server.TcpServer - Server directory ensured: D:\untitled\server_files
+2026-01-03 05:03:46.809 [main] INFO  network.labs.lab1.server.TcpServer - Starting server on port 8888
+2026-01-03 05:03:46.810 [main] INFO  network.labs.lab1.server.TcpServer - Server is listening on port 8888
+2026-01-03 05:03:54.334 [main] INFO  network.labs.lab1.client.TcpClient - Client directory ensured: D:\untitled\client_files
+2026-01-03 05:03:54.336 [main] INFO  network.labs.lab1.client.TcpClient - Connecting to localhost:8888
+2026-01-03 05:03:54.337 [main] INFO  network.labs.lab1.client.TcpClient - Connected to localhost:8888
+2026-01-03 05:03:54.337 [main] INFO  network.labs.lab1.server.TcpServer - New client connected: /127.0.0.1:61270
+2026-01-03 05:04:17.354 [main] DEBUG network.labs.lab1.client.TcpClient - → SENT: DOWNLOAD test.txt
+2026-01-03 05:04:17.356 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:61270] Received: DOWNLOAD test.txt
+2026-01-03 05:04:17.358 [main] DEBUG network.labs.lab1.client.TcpClient - ← RECV: OK
+2026-01-03 05:04:17.358 [main] INFO  network.labs.lab1.client.TcpClient - Downloading 'test.txt' (10712 bytes) to client_test.txt
+2026-01-03 05:04:17.382 [main] INFO  network.labs.lab1.server.TcpServer - Download completed: test.txt → /127.0.0.1:61270 (10712 bytes, {:.2f} KB/s)
+2026-01-03 13:40:45.845 [main] INFO  network.labs.lab1.server.TcpServer - Директория сервера готова: D:\untitled\server_files
+2026-01-03 13:40:45.975 [main] INFO  network.labs.lab1.server.TcpServer - Запуск сервера на порту 8888
+2026-01-03 13:40:45.976 [main] INFO  network.labs.lab1.server.TcpServer - Сервер слушает порт 8888
+2026-01-03 13:40:48.934 [main] INFO  network.labs.lab1.client.TcpClient - Client directory ensured: D:\untitled\client_files
+2026-01-03 13:40:48.937 [main] INFO  network.labs.lab1.client.TcpClient - Connecting to localhost:8888
+2026-01-03 13:40:48.938 [main] INFO  network.labs.lab1.server.TcpServer - Клиент подключился: /127.0.0.1:48337
+2026-01-03 13:40:48.938 [main] INFO  network.labs.lab1.client.TcpClient - Connected to localhost:8888
+2026-01-03 13:41:05.051 [main] DEBUG network.labs.lab1.client.TcpClient - → SENT: DOWNLOAD test.txt
+2026-01-03 13:41:05.051 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:48337] Получено: DOWNLOAD test.txt
+2026-01-03 13:41:05.053 [main] DEBUG network.labs.lab1.client.TcpClient - ← RECV: ОК
+2026-01-03 13:41:05.081 [main] INFO  network.labs.lab1.server.TcpServer - Скачивание завершена: test.txt → /127.0.0.1:48337 (10712 байт, 390,05 КБ/с)
+2026-01-03 13:41:05.081 [main] INFO  network.labs.lab1.server.TcpServer - Клиент отключился: /127.0.0.1:48337
+2026-01-03 13:41:15.201 [main] ERROR network.labs.lab1.client.TcpClient - Command execution failed
+java.net.SocketException: Программа на вашем хост-компьютере разорвала установленное подключение
+	at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+	at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:54)
+	at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+	at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+	at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+	at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1190)
+	at network.labs.lab1.common.IoUtils.writeLine(IoUtils.java:55)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:74)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 13:42:42.097 [main] INFO  network.labs.lab1.client.TcpClient - Client directory ensured: D:\untitled\client_files
+2026-01-03 13:42:42.100 [main] INFO  network.labs.lab1.client.TcpClient - Connecting to localhost:8888
+2026-01-03 13:42:42.101 [main] INFO  network.labs.lab1.client.TcpClient - Connected to localhost:8888
+2026-01-03 13:42:42.101 [main] INFO  network.labs.lab1.server.TcpServer - Клиент подключился: /127.0.0.1:48410
+2026-01-03 13:42:43.913 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:48410] Получено: sdsd
+2026-01-03 13:42:54.471 [main] DEBUG network.labs.lab1.client.TcpClient - → SENT: DOWNLOAD test.txt
+2026-01-03 13:42:54.471 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:48410] Получено: DOWNLOAD test.txt
+2026-01-03 13:42:54.473 [main] DEBUG network.labs.lab1.client.TcpClient - ← RECV: ОК
+2026-01-03 13:42:54.473 [main] INFO  network.labs.lab1.server.TcpServer - Скачивание завершена: test.txt → /127.0.0.1:48410 (10712 байт, 32326,75 КБ/с)
+2026-01-03 13:42:54.474 [main] INFO  network.labs.lab1.server.TcpServer - Клиент отключился: /127.0.0.1:48410
+2026-01-03 13:42:59.961 [main] ERROR network.labs.lab1.client.TcpClient - Command execution failed
+java.net.SocketException: Программа на вашем хост-компьютере разорвала установленное подключение
+	at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+	at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:54)
+	at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+	at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+	at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+	at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1190)
+	at network.labs.lab1.common.IoUtils.writeLine(IoUtils.java:55)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:74)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 14:03:53.631 [main] INFO  network.labs.lab1.server.TcpServer - Директория сервера готова: D:\untitled\server_files
+2026-01-03 14:03:53.658 [main] INFO  network.labs.lab1.server.TcpServer - Запуск сервера на порту 8888
+2026-01-03 14:03:53.659 [main] INFO  network.labs.lab1.server.TcpServer - Сервер слушает порт 8888
+2026-01-03 14:03:56.895 [main] INFO  network.labs.lab1.client.TcpClient - Директория клиента готова: D:\untitled\client_files
+2026-01-03 14:03:56.899 [main] INFO  network.labs.lab1.client.TcpClient - Подключение к localhost:8888
+2026-01-03 14:03:56.900 [main] INFO  network.labs.lab1.client.TcpClient - Соединение установлено с localhost:8888
+2026-01-03 14:03:56.900 [main] INFO  network.labs.lab1.server.TcpServer - Клиент подключился: /127.0.0.1:50769
+2026-01-03 14:04:05.716 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: DOWNLOAD test.txt
+2026-01-03 14:04:05.717 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50769] Получено: DOWNLOAD test.txt
+2026-01-03 14:04:05.718 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: ОК
+2026-01-03 14:04:05.718 [main] INFO  network.labs.lab1.client.TcpClient - Скачивание 'test.txt' (10712 байт) в client_test.txt
+2026-01-03 14:04:05.720 [main] INFO  network.labs.lab1.server.TcpServer - Скачивание завершена: test.txt → /127.0.0.1:50769 (10712 байт, 19906,64 КБ/с)
+2026-01-03 14:04:05.720 [main] INFO  network.labs.lab1.server.TcpServer - Клиент отключился: /127.0.0.1:50769
+2026-01-03 14:04:09.715 [main] ERROR network.labs.lab1.client.TcpClient - Ошибка выполнения команды
+java.net.SocketException: Программа на вашем хост-компьютере разорвала установленное подключение
+	at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+	at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:54)
+	at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+	at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+	at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+	at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1190)
+	at network.labs.lab1.common.IoUtils.writeLine(IoUtils.java:55)
+	at network.labs.lab1.client.TcpClient.sendCommandAndReadResponse(TcpClient.java:229)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:86)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 14:04:46.778 [main] INFO  network.labs.lab1.client.TcpClient - Директория клиента готова: D:\untitled\client_files
+2026-01-03 14:04:46.781 [main] INFO  network.labs.lab1.client.TcpClient - Подключение к localhost:8888
+2026-01-03 14:04:46.781 [main] INFO  network.labs.lab1.client.TcpClient - Соединение установлено с localhost:8888
+2026-01-03 14:04:46.782 [main] INFO  network.labs.lab1.server.TcpServer - Клиент подключился: /127.0.0.1:50857
+2026-01-03 14:04:56.896 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: UPLOAD test.txt
+2026-01-03 14:04:56.897 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Получено: UPLOAD test.txt
+2026-01-03 14:04:57.020 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: НАЧАТЬ 0
+2026-01-03 14:04:57.021 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: размер = 10712 байт
+2026-01-03 14:04:57.021 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Ожидаемый размер файла: 10712 байт
+2026-01-03 14:04:57.022 [main] INFO  network.labs.lab1.client.TcpClient - Загрузка 'test.txt' (10712 байт, смещение: 0)
+2026-01-03 14:04:57.047 [main] INFO  network.labs.lab1.server.TcpServer - Загрузка завершена: test.txt ← /127.0.0.1:50857 (10712 байт, 8611,24 КБ/с)
+2026-01-03 14:04:57.047 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: Файл 'test.txt' загружен (10712 байт, 8611,24 КБ/с)
+2026-01-03 14:04:58.719 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Получено: sd
+2026-01-03 14:05:02.383 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Получено: echo
+2026-01-03 14:05:09.169 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Получено: echo sdsd
+2026-01-03 14:05:17.111 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: DOWNLOAD sdsd
+2026-01-03 14:05:17.112 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Получено: DOWNLOAD sdsd
+2026-01-03 14:05:17.119 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: ОШИБКА: файл не найден: sdsd
+2026-01-03 14:05:19.272 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Получено: asdasd
+2026-01-03 14:05:29.111 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: DOWNLOAD test.txt
+2026-01-03 14:05:29.111 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:50857] Получено: DOWNLOAD test.txt
+2026-01-03 14:05:29.112 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: ОК
+2026-01-03 14:05:29.112 [main] INFO  network.labs.lab1.client.TcpClient - Скачивание 'test.txt' (10712 байт) в client_test.txt
+2026-01-03 14:05:29.129 [main] INFO  network.labs.lab1.server.TcpServer - Скачивание завершена: test.txt → /127.0.0.1:50857 (10712 байт, 629,68 КБ/с)
+2026-01-03 14:05:29.130 [main] INFO  network.labs.lab1.server.TcpServer - Клиент отключился: /127.0.0.1:50857
+2026-01-03 14:05:31.352 [main] ERROR network.labs.lab1.client.TcpClient - Ошибка выполнения команды
+java.net.SocketException: Программа на вашем хост-компьютере разорвала установленное подключение
+	at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+	at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:54)
+	at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+	at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+	at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+	at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1190)
+	at network.labs.lab1.common.IoUtils.writeLine(IoUtils.java:55)
+	at network.labs.lab1.client.TcpClient.sendCommandAndReadResponse(TcpClient.java:229)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:86)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 14:12:06.794 [main] INFO  network.labs.lab1.client.TcpClient - Директория клиента готова: D:\untitled\client_files
+2026-01-03 14:12:06.801 [main] INFO  network.labs.lab1.client.TcpClient - Подключение к localhost:8888
+2026-01-03 14:12:06.803 [main] ERROR network.labs.lab1.client.TcpClient - Не удалось подключиться к localhost:8888
+java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:589)
+	at java.base/sun.nio.ch.Net.connect(Net.java:578)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:583)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:751)
+	at java.base/java.net.Socket.connect(Socket.java:686)
+	at java.base/java.net.Socket.<init>(Socket.java:555)
+	at java.base/java.net.Socket.<init>(Socket.java:324)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:55)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 14:12:10.814 [main] INFO  network.labs.lab1.server.TcpServer - Директория сервера готова: D:\untitled\server_files
+2026-01-03 14:12:10.819 [main] INFO  network.labs.lab1.server.TcpServer - Запуск сервера на порту 8888
+2026-01-03 14:12:10.820 [main] INFO  network.labs.lab1.server.TcpServer - Сервер слушает порт 8888
+2026-01-03 14:12:15.013 [main] INFO  network.labs.lab1.client.TcpClient - Директория клиента готова: D:\untitled\client_files
+2026-01-03 14:12:15.016 [main] INFO  network.labs.lab1.client.TcpClient - Подключение к localhost:8888
+2026-01-03 14:12:15.017 [main] INFO  network.labs.lab1.server.TcpServer - Клиент подключился: /127.0.0.1:51996
+2026-01-03 14:12:15.017 [main] INFO  network.labs.lab1.client.TcpClient - Соединение установлено с localhost:8888
+2026-01-03 14:13:15.806 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: UPLOAD test.txt
+2026-01-03 14:13:15.807 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:51996] Получено: UPLOAD test.txt
+2026-01-03 14:13:15.829 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: НАЧАТЬ 0
+2026-01-03 14:13:15.830 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: размер = 10712 байт
+2026-01-03 14:13:15.830 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:51996] Ожидаемый размер файла: 10712 байт
+2026-01-03 14:13:15.830 [main] INFO  network.labs.lab1.client.TcpClient - Загрузка 'test.txt' (10712 байт, смещение: 0)
+2026-01-03 14:13:15.847 [main] INFO  network.labs.lab1.server.TcpServer - Загрузка завершена: test.txt ← /127.0.0.1:51996 (10712 байт, 842,55 КБ/с)
+2026-01-03 14:13:15.847 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: Файл 'test.txt' загружен (10712 байт, 842,55 КБ/с)
+2026-01-03 14:13:23.431 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: DOWNLOAD test.txt
+2026-01-03 14:13:23.432 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:51996] Получено: DOWNLOAD test.txt
+2026-01-03 14:13:23.433 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: ОК
+2026-01-03 14:13:23.433 [main] INFO  network.labs.lab1.client.TcpClient - Скачивание 'test.txt' (10712 байт) в client_test.txt
+2026-01-03 14:13:23.451 [main] INFO  network.labs.lab1.server.TcpServer - Скачивание завершена: test.txt → /127.0.0.1:51996 (10712 байт, 570,80 КБ/с)
+2026-01-03 14:13:23.452 [main] INFO  network.labs.lab1.server.TcpServer - Клиент отключился: /127.0.0.1:51996
+2026-01-03 14:13:26.183 [main] ERROR network.labs.lab1.client.TcpClient - Ошибка выполнения команды
+java.net.SocketException: Программа на вашем хост-компьютере разорвала установленное подключение
+	at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+	at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:54)
+	at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+	at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+	at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+	at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1190)
+	at network.labs.lab1.common.IoUtils.writeLine(IoUtils.java:55)
+	at network.labs.lab1.client.TcpClient.sendCommandAndReadResponse(TcpClient.java:229)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:86)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 14:13:40.070 [main] INFO  network.labs.lab1.client.TcpClient - Директория клиента готова: D:\untitled\client_files
+2026-01-03 14:13:40.073 [main] INFO  network.labs.lab1.client.TcpClient - Подключение к localhost:8888
+2026-01-03 14:13:40.074 [main] INFO  network.labs.lab1.server.TcpServer - Клиент подключился: /127.0.0.1:52295
+2026-01-03 14:13:40.074 [main] INFO  network.labs.lab1.client.TcpClient - Соединение установлено с localhost:8888
+2026-01-03 14:13:43.343 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:52295] Получено: sdsd
+2026-01-03 14:14:23.886 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:52295] Получено: UPLOAD test.txt
+2026-01-03 14:14:23.886 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: UPLOAD test.txt
+2026-01-03 14:14:23.887 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: НАЧАТЬ 0
+2026-01-03 14:14:23.889 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: размер = 10712 байт
+2026-01-03 14:14:23.889 [main] INFO  network.labs.lab1.client.TcpClient - Загрузка 'test.txt' (10712 байт, смещение: 0)
+2026-01-03 14:14:23.889 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:52295] Ожидаемый размер файла: 10712 байт
+2026-01-03 14:14:23.892 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: Файл 'test.txt' загружен (10712 байт, 17348,18 КБ/с)
+2026-01-03 14:14:23.891 [main] INFO  network.labs.lab1.server.TcpServer - Загрузка завершена: test.txt ← /127.0.0.1:52295 (10712 байт, 17348,18 КБ/с)
+2026-01-03 14:14:26.457 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:52295] Получено: sds
+2026-01-03 14:14:34.357 [main] DEBUG network.labs.lab1.client.TcpClient - → ОТПРАВЛЕНО: DOWNLOAD test.txt
+2026-01-03 14:14:34.357 [main] DEBUG network.labs.lab1.server.TcpServer - [/127.0.0.1:52295] Получено: DOWNLOAD test.txt
+2026-01-03 14:14:34.358 [main] DEBUG network.labs.lab1.client.TcpClient - ← ПОЛУЧЕНО: ОК
+2026-01-03 14:14:34.359 [main] INFO  network.labs.lab1.client.TcpClient - Скачивание 'test.txt' (10712 байт) в client_test.txt
+2026-01-03 14:14:34.382 [main] INFO  network.labs.lab1.server.TcpServer - Скачивание завершена: test.txt → /127.0.0.1:52295 (10712 байт, 454,12 КБ/с)
+2026-01-03 14:14:34.382 [main] INFO  network.labs.lab1.server.TcpServer - Клиент отключился: /127.0.0.1:52295
+2026-01-03 14:14:36.320 [main] ERROR network.labs.lab1.client.TcpClient - Ошибка выполнения команды
+java.net.SocketException: Программа на вашем хост-компьютере разорвала установленное подключение
+	at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+	at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:54)
+	at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+	at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+	at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+	at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1190)
+	at network.labs.lab1.common.IoUtils.writeLine(IoUtils.java:55)
+	at network.labs.lab1.client.TcpClient.sendCommandAndReadResponse(TcpClient.java:229)
+	at network.labs.lab1.client.TcpClient.start(TcpClient.java:86)
+	at network.labs.lab1.client.MainClient.main(MainClient.java:7)

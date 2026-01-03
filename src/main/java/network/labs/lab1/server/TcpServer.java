@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -25,6 +26,11 @@ public class TcpServer {
     private final Path serverDir;
     private final Map<String, CommandSpec> commandRegistry;
 
+    /**
+     * Конструктор сервера.
+     *
+     * @param port порт, на котором будет слушать сервер
+     */
     public TcpServer(int port) {
         this.port = port;
         this.serverDir = Path.of("server_files");
@@ -33,20 +39,26 @@ public class TcpServer {
         registerCommands();
     }
 
+    /**
+     * Создаёт директорию для файлов сервера.
+     */
     private void initServerDirectory() {
         try {
             Files.createDirectories(serverDir);
-            log.info("Server directory ensured: {}", serverDir.toAbsolutePath());
+            log.info("Директория сервера готова: {}", serverDir.toAbsolutePath());
         } catch (IOException e) {
-            log.error("Failed to initialize server directory", e);
-            throw new IllegalStateException("Server directory unavailable", e);
+            log.error("Не удалось создать директорию сервера", e);
+            throw new IllegalStateException("Директория сервера недоступна", e);
         }
     }
 
+    /**
+     * Запускает сервер и принимает подключения клиентов.
+     */
     public void start() {
-        log.info("Starting server on port {}", port);
+        log.info("Запуск сервера на порту {}", port);
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            log.info("Server is listening on port {}", port);
+            log.info("Сервер слушает порт {}", port);
 
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -54,38 +66,57 @@ public class TcpServer {
                     clientSocket.setKeepAlive(true);
                     handleClient(clientSocket);
                 } catch (IOException e) {
-                    log.warn("Failed to accept client connection", e);
+                    log.warn("Ошибка при принятии подключения клиента", e);
                 }
             }
         } catch (IOException e) {
-            log.error("Server socket error", e);
+            log.error("Ошибка серверного сокета", e);
         }
     }
 
+    /**
+     * Обрабатывает подключение клиента.
+     *
+     * @param clientSocket сокет клиента
+     */
     private void handleClient(Socket clientSocket) {
         String clientAddr = clientSocket.getRemoteSocketAddress().toString();
-        log.info("New client connected: {}", clientAddr);
+        log.info("Клиент подключился: {}", clientAddr);
 
         try (clientSocket) {
             CommandContext ctx = new CommandContext(clientSocket);
             processClientCommands(ctx, clientAddr);
         } catch (IOException e) {
-            log.warn("Client connection terminated unexpectedly: {}", clientAddr, e);
+            log.warn("Соединение с клиентом прервано: {}", clientAddr, e);
         } finally {
-            log.info("Client disconnected: {}", clientAddr);
+            log.info("Клиент отключился: {}", clientAddr);
         }
     }
 
+    /**
+     * Обрабатывает команды клиента в цикле.
+     *
+     * @param ctx        контекст команды (сокет, потоки)
+     * @param clientAddr адрес клиента
+     * @throws IOException при ошибках ввода-вывода
+     */
     private void processClientCommands(CommandContext ctx, String clientAddr) throws IOException {
         String commandLine;
         while ((commandLine = IoUtils.readLine(ctx.in())) != null) {
-            log.debug("[{}] Received: {}", clientAddr, commandLine);
+            log.debug("[{}] Получено: {}", clientAddr, commandLine);
             if (executeCommand(commandLine, ctx)) {
                 break;
             }
         }
     }
 
+    /**
+     * Выполняет команду клиента.
+     *
+     * @param line строка команды
+     * @param ctx  контекст команды
+     * @return true, если нужно закрыть соединение
+     */
     private boolean executeCommand(String line, CommandContext ctx) {
         String[] parts = line.trim().split("\\s+", 2);
         if (parts.length == 0) {
@@ -97,13 +128,13 @@ public class TcpServer {
 
         CommandSpec spec = commandRegistry.get(commandName);
         if (spec == null) {
-            sendResponse(ctx, "ERROR Unknown command: " + commandName);
+            sendResponse(ctx, "ОШИБКА: неизвестная команда " + commandName);
             return false;
         }
 
         if (!spec.validate(args)) {
             sendResponse(ctx, String.format(
-                    "ERROR Command %s requires %d to %d arguments",
+                    "ОШИБКА: команда %s требует от %d до %d аргументов",
                     commandName, spec.minArgs(), spec.maxArgs()
             ));
             return false;
@@ -112,14 +143,23 @@ public class TcpServer {
         return spec.handler().handle(args, ctx);
     }
 
+    /**
+     * Отправляет строковый ответ клиенту.
+     *
+     * @param ctx     контекст команды
+     * @param message сообщение для отправки
+     */
     private void sendResponse(CommandContext ctx, String message) {
         try {
             IoUtils.writeLine(ctx.out(), message);
         } catch (IOException e) {
-            log.warn("Failed to send response", e);
+            log.warn("Не удалось отправить ответ клиенту", e);
         }
     }
 
+    /**
+     * Регистрирует доступные команды сервера.
+     */
     private void registerCommands() {
         commandRegistry.put("ECHO", new CommandSpec(0, Integer.MAX_VALUE, (args, ctx) -> {
             String response = String.join(" ", args);
@@ -133,7 +173,7 @@ public class TcpServer {
         }));
 
         CommandHandler closeHandler = (args, ctx) -> {
-            sendResponse(ctx, "Connection closed");
+            sendResponse(ctx, "Соединение закрыто");
             return true;
         };
         commandRegistry.put("CLOSE", new CommandSpec(0, 0, closeHandler));
@@ -144,6 +184,13 @@ public class TcpServer {
         commandRegistry.put("DOWNLOAD", new CommandSpec(1, 1, this::handleDownload));
     }
 
+    /**
+     * Обрабатывает команду загрузки файла от клиента.
+     *
+     * @param args аргументы команды (имя файла)
+     * @param ctx  контекст команды
+     * @return false (соединение не закрывается)
+     */
     private boolean handleUpload(String[] args, CommandContext ctx) {
         String filename = args[0];
         String clientAddr = ctx.socket().getRemoteSocketAddress().toString();
@@ -152,37 +199,50 @@ public class TcpServer {
         Path resumeInfo = serverDir.resolve(filename + ".resume");
 
         try {
-            // 1. Подготавливаем resume
+            // 1. Готовим состояние возобновления (resume) и определяем смещение
             UploadResumeState state = prepareUploadResume(partFile, resumeInfo, clientAddr);
-            sendResponse(ctx, (state.isResume() ? "CONTINUE " : "START ") + state.offset());
 
-            // ✅ 2. Читаем ОЖИДАЕМЫЙ размер (от клиента)
+            // 2. Сообщаем клиенту режим (НАЧАТЬ/ПРОДОЛЖИТЬ) и смещение
+            sendResponse(ctx, (state.isResume() ? "ПРОДОЛЖИТЬ " : "НАЧАТЬ ") + state.offset());
+
+            // 3. Читаем ожидаемый размер оставшейся части файла
             String sizeLine = IoUtils.readLine(ctx.in());
             long remaining = Long.parseLong(sizeLine.trim());
-            log.debug("[{}] Expected file size: {} bytes", clientAddr, remaining);
+            log.debug("[{}] Ожидаемый размер файла: {} байт", clientAddr, remaining);
 
-            // 3. Принимаем ровно 'remaining' байт
+            // 4. Принимаем байты файла в .part (с учётом resume)
             long start = System.nanoTime();
             long received = receiveFileContent(ctx, partFile, state.isResume(), remaining);
             long end = System.nanoTime();
 
-            // 4. Финализируем
+            // 5. Финализируем загрузку: переносим .part в целевой файл и очищаем служебные данные
             finalizeUpload(partFile, target, resumeInfo, filename);
 
-            // 5. Отправляем результат
-            double bitrate = calculateBitrate(received, end - start);
-            String response = String.format("File '%s' uploaded (%d bytes, %.2f KB/s)", filename, received, bitrate);
-            sendResponse(ctx, response);
-
-            log.info("Upload completed: {} ← {} ({} bytes, {:.2f} KB/s)", filename, clientAddr, received, bitrate);
+            // 6. Отправляем финальное сообщение (битрейт) и логируем результат
+            sendResponse(ctx, String.format(
+                    "Файл '%s' загружен (%d байт, %s КБ/с)",
+                    filename, received, formatBitrate(received, end - start)
+            ));
+            logTransfer("Загрузка", filename, clientAddr, received, end - start, true);
 
         } catch (IOException e) {
-            log.error("UPLOAD failed for file: {}", filename, e);
-            sendResponse(ctx, "ERROR Upload failed: " + e.getMessage());
+            // 7. Обрабатываем ошибки ввода-вывода
+            log.error("Ошибка загрузки файла: {}", filename, e);
+            sendResponse(ctx, "ОШИБКА: загрузка не удалась: " + e.getMessage());
         }
+        // 8. Соединение остаётся открытым (возвращаем false)
         return false;
     }
 
+    /**
+     * Подготавливает состояние для возобновления загрузки.
+     *
+     * @param partFile   временный файл
+     * @param resumeInfo файл с информацией о клиенте
+     * @param clientAddr адрес клиента
+     * @return состояние загрузки (resume/offset)
+     * @throws IOException при ошибках ввода-вывода
+     */
     private UploadResumeState prepareUploadResume(Path partFile, Path resumeInfo, String clientAddr) throws IOException {
         if (Files.exists(partFile) && Files.exists(resumeInfo)) {
             String savedClient = Files.readString(resumeInfo, StandardCharsets.UTF_8).trim();
@@ -197,6 +257,16 @@ public class TcpServer {
         return new UploadResumeState(false, 0);
     }
 
+    /**
+     * Принимает содержимое файла от клиента.
+     *
+     * @param ctx      контекст команды
+     * @param partFile временный файл
+     * @param resume   true, если продолжаем загрузку
+     * @param length   ожидаемый размер (байты)
+     * @return количество принятых байт
+     * @throws IOException при ошибках ввода-вывода
+     */
     private long receiveFileContent(CommandContext ctx, Path partFile, boolean resume, long length) throws IOException {
         try (OutputStream out = Files.newOutputStream(partFile,
                 StandardOpenOption.CREATE,
@@ -205,47 +275,121 @@ public class TcpServer {
         }
     }
 
+    /**
+     * Финализирует загрузку, перемещая временный файл на целевой путь.
+     *
+     * @param partFile   временный файл
+     * @param target     целевой файл
+     * @param resumeInfo файл с информацией о клиенте
+     * @param filename   имя файла
+     * @throws IOException при ошибках файловых операций
+     */
     private void finalizeUpload(Path partFile, Path target, Path resumeInfo, String filename) throws IOException {
         Files.move(partFile, target, StandardCopyOption.REPLACE_EXISTING);
         Files.deleteIfExists(resumeInfo);
     }
 
+    /**
+     * Обрабатывает команду скачивания файла клиентом.
+     *
+     * @param args аргументы команды (имя файла)
+     * @param ctx  контекст команды
+     * @return true, если скачивание завершено полностью
+     */
     private boolean handleDownload(String[] args, CommandContext ctx) {
         String filename = args[0];
         Path source = serverDir.resolve(filename);
         String clientAddr = ctx.socket().getRemoteSocketAddress().toString();
 
+        // 1. Проверяем наличие файла на сервере
         if (!Files.exists(source)) {
-            sendResponse(ctx, "ERROR File not found: " + filename);
+            sendResponse(ctx, "ОШИБКА: файл не найден: " + filename);
             return false;
         }
 
         try {
-            sendResponse(ctx, "OK");
-            IoUtils.writeLine(ctx.out(), String.valueOf(Files.size(source)));
+            // 2. Отправляем статус "ОК" и ожидаемый размер файла
+            long expectedSize = Files.size(source);
+            sendResponse(ctx, "ОК");
+            IoUtils.writeLine(ctx.out(), String.valueOf(expectedSize));
 
+            // 3. Передаём байты файла
             long start = System.nanoTime();
-            long sent = IoUtils.copyStream(Files.newInputStream(source), ctx.out(), Files.size(source));
+            long sent;
+            try (InputStream fis = Files.newInputStream(source)) {
+                sent = IoUtils.copyStream(fis, ctx.out(), expectedSize);
+            }
             long end = System.nanoTime();
 
-            if (sent == Files.size(source)) {
-                double bitrate = calculateBitrate(sent, end - start);
-                log.info("Download completed: {} → {} ({} bytes, {:.2f} KB/s)", filename, clientAddr, sent, bitrate);
+            // 4. Формируем итог: успешно или частично
+            boolean success = (sent == expectedSize);
+            if (success) {
+                sendResponse(ctx, String.format(
+                        "Файл '%s' отправлен (%d байт, %s КБ/с)",
+                        filename, sent, formatBitrate(sent, end - start)
+                ));
             } else {
-                log.warn("Partial download: {}/{} bytes sent to {}", sent, Files.size(source), clientAddr);
+                sendResponse(ctx, String.format(
+                        "ПРЕДУПРЕЖДЕНИЕ: отправлено %d из %d байт",
+                        sent, expectedSize
+                ));
             }
 
+            // 5. Логируем результат передачи
+            logTransfer("Скачивание", filename, clientAddr, sent, end - start, success);
+
+            // 6. Возвращаем флаг полного завершения (true/false)
+            return success;
+
         } catch (IOException e) {
-            log.error("DOWNLOAD failed for file: {}", filename, e);
-            sendResponse(ctx, "ERROR Download failed: " + e.getMessage());
+            // 7. Обрабатываем ошибки ввода-вывода
+            log.error("Ошибка скачивания файла: {}", filename, e);
+            sendResponse(ctx, "ОШИБКА: скачивание не удалось: " + e.getMessage());
+            return false;
         }
-        return false;
     }
 
-    private double calculateBitrate(long bytes, long nanos) {
+    /**
+     * Форматирует скорость передачи в КБ/с с точностью до двух знаков.
+     *
+     * @param bytes количество байт
+     * @param nanos длительность операции в наносекундах
+     * @return строка со скоростью в КБ/с
+     */
+    private String formatBitrate(long bytes, long nanos) {
         double seconds = nanos / 1_000_000_000.0;
-        return (bytes / 1024.0) / seconds;
+        double kbps = (bytes / 1024.0) / Math.max(seconds, 1e-9);
+        return String.format("%.2f", kbps);
     }
 
+    /**
+     * Логирует результат передачи (загрузка/скачивание) в единообразном формате.
+     *
+     * @param action     действие: "Загрузка" или "Скачивание"
+     * @param filename   имя файла
+     * @param clientAddr адрес клиента
+     * @param bytes      количество байт
+     * @param nanos      длительность операции в наносекундах
+     * @param success    true, если операция завершена полностью
+     */
+    private void logTransfer(String action, String filename, String clientAddr,
+                             long bytes, long nanos, boolean success) {
+        String kbps = formatBitrate(bytes, nanos);
+        String arrow = "Загрузка".equals(action) ? "←" : "→";
+        if (success) {
+            log.info("{} завершена: {} {} {} ({} байт, {} КБ/с)",
+                    action, filename, arrow, clientAddr, bytes, kbps);
+        } else {
+            log.warn("{} частично: {} {} {} ({} байт, {} КБ/с)",
+                    action, filename, arrow, clientAddr, bytes, kbps);
+        }
+    }
+
+    /**
+     * Состояние возобновления загрузки.
+     *
+     * @param isResume true, если продолжаем прерванную загрузку
+     * @param offset   текущий размер временного файла (байты)
+     */
     private record UploadResumeState(boolean isResume, long offset) {}
 }

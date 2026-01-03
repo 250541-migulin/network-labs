@@ -5,10 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-/**
- * Контекст выполнения команды: содержит "сырые" потоки клиента.
- * НЕ содержит BufferedReader/PrintWriter — во избежание десинхронизации.
- */
 public class CommandContext {
     private final Socket socket;
     private final InputStream in;
