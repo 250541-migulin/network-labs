@@ -74,4 +74,18 @@ public class IoUtils {
         out.flush();
         return total;
     }
+
+    /**
+     * Форматирует скорость передачи.
+     *
+     * @param bytes количество байт
+     * @param millis время передачи в миллисекундах
+     * @return строка вида "1234 байт за 50 мс (24.6 KB/s)"
+     */
+    public static String formatTransferRate(long bytes, long millis) {
+        if (millis <= 0) millis = 1; // защита от деления на ноль
+        double seconds = millis / 1000.0;
+        double kbps = (bytes / 1024.0) / seconds;
+        return String.format("%d байт за %d мс (%.2f KB/s)", bytes, millis, kbps);
+    }
 }

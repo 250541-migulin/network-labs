@@ -372,3 +372,11 @@ java.net.SocketException: Программа на вашем хост-компь
 	at network.labs.lab1.client.TcpClient.sendCommandAndReadResponse(TcpClient.java:229)
 	at network.labs.lab1.client.TcpClient.start(TcpClient.java:86)
 	at network.labs.lab1.client.MainClient.main(MainClient.java:7)
+2026-01-03 23:36:38.068 [main] INFO  network.labs.lab1.common.FileUtils - Директория уже существует: D:\untitled\server_files
+2026-01-03 23:36:42.323 [main] INFO  network.labs.lab1.common.FileUtils - Директория уже существует: D:\untitled\client_files
+2026-01-03 23:44:32.746 [main] INFO  network.labs.lab1.common.FileUtils - Директория уже существует: D:\untitled\server_files
+2026-01-03 23:44:45.404 [main] INFO  network.labs.lab1.common.FileUtils - Директория уже существует: D:\untitled\client_files
+2026-01-03 23:49:49.333 [main] INFO  network.labs.lab1.common.FileUtils - Директория уже существует: D:\untitled\server_files
+2026-01-03 23:49:49.338 [main] INFO  network.labs.lab1.server.TcpServer - Сервер запущен на порту 8888
+2026-01-03 23:49:52.392 [main] INFO  network.labs.lab1.common.FileUtils - Директория уже существует: D:\untitled\client_files
+2026-01-03 23:49:52.396 [main] INFO  network.labs.lab1.server.TcpServer - Подключился клиент: /127.0.0.1:57552
