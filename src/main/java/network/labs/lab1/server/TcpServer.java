@@ -2,6 +2,7 @@ package network.labs.lab1.server;
 
 import network.labs.lab1.common.*;
 import network.labs.lab1.server.commands.*;
+import network.labs.lab2.util.PathsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,85 +13,60 @@ import java.net.SocketException;
 import java.nio.file.Path;
 
 /**
- * TCP-сервер для обмена файлами.
- * <p>
- * Сервер является последовательным: обслуживает только одного клиента
- * в данный момент. Новые подключения во время работы отвергаются.
+ * Последовательный TCP-сервер (ЛР №1).
  */
 public class TcpServer {
     private static final Logger log = LoggerFactory.getLogger(TcpServer.class);
-
     private final int port;
     private final Path serverDir;
-    private final CommandRegistry<ServerCommandContext> registry;
-    private boolean busy = false;
 
-    /**
-     * Создаёт сервер на указанном порту с дефолтной директорией хранения файлов.
-     *
-     * @param port порт сервера
-     */
     public TcpServer(int port) {
         this.port = port;
-        this.serverDir = Path.of("server_files");
+        this.serverDir = PathsConfig.SERVER_TCP;
         FileUtils.ensureDirectory(serverDir);
-        this.registry = createRegistry();
     }
 
-    /**
-     * Запускает сервер: принимает клиентов и обрабатывает их команды.
-     * Сервер обслуживает только одного клиента одновременно.
-     */
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            log.info("Сервер запущен на порту {}", port);
+            log.info("TCP-сервер запущен на порту {}", port);
 
             while (true) {
-                Socket clientSocket = serverSocket.accept();
+                Socket client = serverSocket.accept();
+                log.info("Подключился клиент: {}", client.getRemoteSocketAddress());
 
-                if (busy) {
-                    log.warn("Отклонено подключение: {}", clientSocket.getRemoteSocketAddress());
-                    clientSocket.close();
-                    continue;
-                }
+                client.setKeepAlive(true);
+                client.setSoTimeout(120_000);
 
-                busy = true;
-                log.info("Подключился клиент: {}", clientSocket.getRemoteSocketAddress());
-
-                handleClient(clientSocket);
-
-                busy = false;
+                handleClient(client);
                 log.info("Клиент отключился");
             }
         } catch (IOException e) {
-            log.error("Ошибка запуска сервера", e);
+            log.error("Сервер остановлен", e);
         }
     }
 
-    /**
-     * Обрабатывает команды подключённого клиента.
-     *
-     * @param socket сокет клиента
-     */
-    private void handleClient(Socket socket) {
-        try (socket) {
-            ServerCommandContext ctx = new ServerCommandContext(socket, socket.getInputStream(), socket.getOutputStream());
+    private void handleClient(Socket client) {
+        try (client) {
+            TcpServerCommandContext ctx = new TcpServerCommandContext(client, serverDir);
 
-            boolean running = true;
-            while (running) {
-                String line = IoUtils.readLine(ctx.in());
-                if (line == null) break; // клиент закрыл соединение
+            CommandRegistry<CommandContext> textReg = createTextRegistry();
+            CommandRegistry<FileAwareContext> fileReg = createFileRegistry();
 
-                CommandResult result = registry.dispatch(line, ctx);
-                if (result == CommandResult.ERROR) {
-                    ctx.writeLine("ОШИБКА: неизвестная команда");
-                    log.warn("Неизвестная команда от клиента: {}", line);
+            while (true) {
+                String line = ctx.readLine();
+                if (line == null) break;
+
+                String cmd = line.split("\\s+")[0].toUpperCase();
+
+                CommandResult res;
+                if ("UPLOAD".equals(cmd) || "DOWNLOAD".equals(cmd)) {
+                    res = fileReg.dispatch(line, ctx);
+                } else {
+                    res = textReg.dispatch(line, ctx);
                 }
-                if (result == CommandResult.CLOSE) {
-                    running = false;
-                }
+
+                if (res == CommandResult.CLOSE) break;
             }
-
         } catch (SocketException e) {
             log.info("Клиент разорвал соединение: {}", e.getMessage());
         } catch (IOException e) {
@@ -98,19 +74,19 @@ public class TcpServer {
         }
     }
 
-    /**
-     * Создаёт и регистрирует команды сервера.
-     *
-     * @return реестр команд
-     */
-    private CommandRegistry<ServerCommandContext> createRegistry() {
-        CommandRegistry<ServerCommandContext> registry = new CommandRegistry<>();
-        registry.register(new EchoCommand());
-        registry.register(new TimeCommand());
-        registry.register(new UploadCommand(serverDir));
-        registry.register(new DownloadCommand(serverDir));
-        registry.register(new CloseCommand());
-        registry.register(new UnknownCommand());
-        return registry;
+    private CommandRegistry<CommandContext> createTextRegistry() {
+        CommandRegistry<CommandContext> reg = new CommandRegistry<>();
+        reg.register(new EchoCommand());
+        reg.register(new TimeCommand());
+        reg.register(new CloseCommand());
+        reg.register(new UnknownCommand());
+        return reg;
+    }
+
+    private CommandRegistry<FileAwareContext> createFileRegistry() {
+        CommandRegistry<FileAwareContext> reg = new CommandRegistry<>();
+        reg.register(new UploadCommand(serverDir));
+        reg.register(new DownloadCommand(serverDir));
+        return reg;
     }
 }

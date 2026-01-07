@@ -1,19 +1,15 @@
 package network.labs.lab1.server.commands;
 
 import network.labs.lab1.common.*;
-import network.labs.lab1.server.ServerCommandContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.*;
 
-/**
- * Команда DOWNLOAD: отправляет файл клиенту.
- */
-public class DownloadCommand implements Command<ServerCommandContext> {
+public class DownloadCommand implements Command<FileAwareContext> {
+    private static final Logger log = LoggerFactory.getLogger(DownloadCommand.class);
     private final Path serverDir;
-    private final Logger log = LoggerFactory.getLogger(DownloadCommand.class);
 
     public DownloadCommand(Path serverDir) {
         this.serverDir = serverDir;
@@ -25,7 +21,7 @@ public class DownloadCommand implements Command<ServerCommandContext> {
     }
 
     @Override
-    public CommandResult execute(String[] args, ServerCommandContext ctx) throws IOException {
+    public CommandResult execute(String[] args, FileAwareContext ctx) throws IOException {
         if (args.length < 1) {
             ctx.writeLine("ОШИБКА: имя файла не указано");
             return CommandResult.ERROR;
@@ -34,26 +30,23 @@ public class DownloadCommand implements Command<ServerCommandContext> {
         Path source = serverDir.resolve(filename);
 
         if (!Files.exists(source)) {
-            ctx.writeLine("ОШИБКА: файл не найден: " + filename);
-            log.warn("Запрошен несуществующий файл '{}'", filename);
+            ctx.writeLine("ОШИБКА: файл не найден — " + filename);
             return CommandResult.ERROR;
         }
 
         long size = Files.size(source);
-
         ctx.writeLine("ОК");
         ctx.writeLine(String.valueOf(size));
-        log.info("Готов отправлять файл '{}' размером {} байт", filename, size);
+        log.info("Отправляю файл '{}' ({} байт)", filename, size);
 
         long start = System.currentTimeMillis();
         try (InputStream fis = Files.newInputStream(source)) {
-            IoUtils.copyStream(fis, ctx.out(), size);
+            IoUtils.copyStream(fis, ctx.outputStream(), size);
         }
         long elapsed = System.currentTimeMillis() - start;
 
         String rate = IoUtils.formatTransferRate(size, elapsed);
-        log.info("Файл '{}' отправлен: {} ({} байт за {} мс)", filename, rate, size, elapsed);
-
+        log.info("Файл '{}' отправлен: {}", filename, rate);
         ctx.writeLine("Файл '" + filename + "' отправлен: " + rate);
         return CommandResult.CONTINUE;
     }

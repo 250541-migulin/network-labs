@@ -1,10 +1,8 @@
 package network.labs.lab1.client;
 
 /**
- * Точка входа для запуска TCP‑клиента.
- * Аргументы командной строки:
- *  args[0] - хост (по умолчанию localhost)
- *  args[1] - порт (по умолчанию 8888)
+ * Запуск TCP-клиента.
+ * Аргументы: [host] [port]
  */
 public class MainClient {
     public static void main(String[] args) {

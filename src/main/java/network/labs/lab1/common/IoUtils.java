@@ -1,55 +1,27 @@
 package network.labs.lab1.common;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Утилиты ввода-вывода для безопасной работы с потоками.
- * Гарантируют корректное чтение/запись строк и предотвращают десинхронизацию
- * между текстовыми и бинарными операциями.
- */
 public class IoUtils {
 
-    /**
-     * Читает одну строку из InputStream до \n или \r\n.
-     * Поддерживает оба формата окончания строки (telnet и netcat).
-     *
-     * @return прочитанная строка без \r\n / \n, или null при EOF
-     * @throws IOException при ошибках ввода-вывода
-     */
-    /**
-     * Читает строку в UTF-8 до \n или \r\n.
-     * Корректно обрабатывает многобайтовые символы (кириллица, эмодзи и т.д.).
-     */
     public static String readLine(InputStream in) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
         int b;
         while ((b = in.read()) != -1) {
-            if (b == '\n') {
-                break;
-            }
+            if (b == '\n') break;
             if (b == '\r') {
                 in.mark(1);
                 int next = in.read();
-                if (next != '\n') {
-                    in.reset();
-                }
+                if (next != '\n') in.reset();
                 break;
             }
-            buffer.write(b);
+            buf.write(b);
         }
-        byte[] bytes = buffer.toByteArray();
-        return bytes.length == 0 && b == -1 ? null : new String(bytes, StandardCharsets.UTF_8);
+        byte[] bytes = buf.toByteArray();
+        return (bytes.length == 0 && b == -1) ? null : new String(bytes, StandardCharsets.UTF_8);
     }
 
-    /**
-     * Записывает строку в OutputStream с окончанием \r\n.
-     *
-     * @throws IOException при ошибках ввода-вывода
-     */
     public static void writeLine(OutputStream out, String line) throws IOException {
         out.write(line.getBytes(StandardCharsets.UTF_8));
         out.write('\r');
@@ -57,12 +29,6 @@ public class IoUtils {
         out.flush();
     }
 
-    /**
-     * Копирует ровно length байт из in в out.
-     * Возвращает фактически прочитанное количество байт (<= length).
-     *
-     * @throws IOException при ошибках ввода-вывода
-     */
     public static long copyStream(InputStream in, OutputStream out, long length) throws IOException {
         byte[] buffer = new byte[8192];
         long total = 0;
@@ -75,17 +41,11 @@ public class IoUtils {
         return total;
     }
 
-    /**
-     * Форматирует скорость передачи.
-     *
-     * @param bytes количество байт
-     * @param millis время передачи в миллисекундах
-     * @return строка вида "1234 байт за 50 мс (24.6 KB/s)"
-     */
     public static String formatTransferRate(long bytes, long millis) {
-        if (millis <= 0) millis = 1; // защита от деления на ноль
+        if (millis <= 0) return bytes + " байт за " + millis + " мс (—)";
         double seconds = millis / 1000.0;
-        double kbps = (bytes / 1024.0) / seconds;
-        return String.format("%d байт за %d мс (%.2f KB/s)", bytes, millis, kbps);
+        double kb = bytes / 1024.0;
+        double rate = kb / seconds;
+        return bytes + " байт за " + millis + " мс (" + String.format("%.2f", rate) + " KB/s)";
     }
 }

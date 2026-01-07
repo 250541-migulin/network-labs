@@ -1,22 +1,20 @@
 package network.labs.lab1.server.commands;
 
 import network.labs.lab1.common.*;
-import network.labs.lab1.server.ServerCommandContext;
-
 import java.io.IOException;
 
 /**
- * Команда эхо: возвращает клиенту ту же строку.
+ * Серверная команда ECHO: возвращает аргументы как есть.
  */
-public class EchoCommand implements Command<ServerCommandContext> {
+public class EchoCommand implements Command<CommandContext> {
     @Override
     public String name() {
         return CommandName.ECHO.key();
     }
 
     @Override
-    public CommandResult execute(String[] args, ServerCommandContext ctx) throws IOException {
-        ctx.writeLine(args.length == 0 ? "" : String.join(" ", args));
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        ctx.writeLine(String.join(" ", args));
         return CommandResult.CONTINUE;
     }
 }
