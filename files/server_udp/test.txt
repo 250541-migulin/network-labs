@@ -1,4 +1,4 @@
-=== Полные пути + содержимое файлов из D:\network\src\network ===
+=== пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ + пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ D:\network\src\network ===
 
 ===== FILE: D:\network\src\network\lab1\client\MainClient.java =====
 package network.lab1.client;
@@ -17,8 +17,8 @@ import java.io.*;
 import java.net.Socket;
 
 /**
- * TCP-клиент для ЛР1.
- * Подключается к серверу и отправляет команды.
+ * TCP-пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ1.
+ * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
  */
 public class TcpClient {
     private final String host;
@@ -30,7 +30,7 @@ public class TcpClient {
     }
 
     /**
-     * Запуск клиента: читаем команды из консоли, отправляем на сервер, выводим ответы.
+     * пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.
      */
     public void start() {
         try (Socket socket = new Socket(host, port);
@@ -38,22 +38,22 @@ public class TcpClient {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
 
-            System.out.println("Подключено к " + host + ":" + port);
-            System.out.println("Введите команду (ECHO <текст>, TIME, CLOSE):");
+            System.out.println("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ " + host + ":"+ port);
+            System.out.println("пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (ECHO <пїЅпїЅпїЅпїЅпїЅ>, TIME, CLOSE):");
 
             String userInput;
             while ((userInput = console.readLine()) != null) {
-                out.println(userInput);             // отправляем команду серверу
-                String response = in.readLine();    // читаем ответ сервера
-                System.out.println("Сервер: " + response);
+                out.println(userInput);             // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                String response = in.readLine();    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+                System.out.println("пїЅпїЅпїЅпїЅпїЅпїЅ: " + response);
 
                 if ("CLOSE".equalsIgnoreCase(userInput)) {
-                    break; // завершаем работу клиента
+                    break; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 }
             }
 
         } catch (IOException e) {
-            e.printStackTrace(); // выводим ошибки сети
+            e.printStackTrace(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
         }
     }
 }
@@ -64,17 +64,17 @@ package network.lab1.server;
 import java.io.PrintWriter;
 
 /**
- * Обработчик команды.
- * Выполняет действие на основе аргументов и пишет ответ клиенту.
+ * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
+ * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
  */
 @FunctionalInterface
 public interface CommandHandler {
     /**
-     * Выполнение команды.
+     * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
      *
-     * @param args аргументы команды
-     * @param out поток для отправки ответа клиенту
-     * @return true если после выполнения нужно закрыть соединение
+     * @param args пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+     * @param out пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+     * @return true пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
      */
     boolean handle(String[] args, PrintWriter out);
 }
@@ -83,8 +83,8 @@ public interface CommandHandler {
 package network.lab1.server;
 
 /**
- * Спецификация команды: хранит допустимое количество аргументов
- * и обработчик, выполняющий команду.
+ * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ * пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
  */
 public record CommandSpec(
         int minArgs,
@@ -93,7 +93,7 @@ public record CommandSpec(
 ) {
 
     /**
-     * Проверка, что количество аргументов находится в допустимых пределах.
+     * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
      */
     public boolean validate(String[] args) {
         return args.length >= minArgs && args.length <= maxArgs;
@@ -120,8 +120,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Последовательный TCP-сервер для ЛР1.
- * Поддерживает команды ECHO, TIME, CLOSE.
+ * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ TCP-пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ1.
+ * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ ECHO, TIME, CLOSE.
  */
 public class TcpServer {
     private final int port;
@@ -129,18 +129,18 @@ public class TcpServer {
 
     public TcpServer(int port) {
         this.port = port;
-        registerCommands(); // регистрируем команды при создании сервера
+        registerCommands(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     }
 
     /**
-     * Запуск сервера: слушаем порт и принимаем клиентов по очереди.
+     * пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
      */
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Сервер слушает порт " + port);
+            System.out.println("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ " + port);
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("Подключился клиент: " + clientSocket.getRemoteSocketAddress());
+                System.out.println("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: " + clientSocket.getRemoteSocketAddress());
                 handleClient(clientSocket);
             }
         } catch (IOException e) {
@@ -149,7 +149,7 @@ public class TcpServer {
     }
 
     /**
-     * Обработка одного клиента: читаем команды и отправляем ответы.
+     * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.
      */
     private void handleClient(Socket clientSocket) {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -157,19 +157,19 @@ public class TcpServer {
 
             String line;
             while ((line = in.readLine()) != null) {
-                if (processCommand(line, out)) break; // завершение по CLOSE
+                if (processCommand(line, out)) break; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ CLOSE
             }
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             try { clientSocket.close(); } catch (IOException ignored) {}
-            System.out.println("Клиент отключился");
+            System.out.println("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
         }
     }
 
     /**
-     * Разбор и выполнение команды.
-     * @return true если нужно закрыть соединение
+     * пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
+     * @return true пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
      */
     private boolean processCommand(String line, PrintWriter out) {
         String[] parts = line.trim().split("\\s+");
@@ -180,19 +180,19 @@ public class TcpServer {
 
         CommandSpec spec = registry.get(command);
         if (spec == null) {
-            out.println("Неизвестная команда: " + command);
+            out.println("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + command);
             return false;
         }
         if (!spec.validate(args)) {
-            out.println("Ошибка: команда " + command +
-                    " требует от " + spec.minArgs() + " до " + spec.maxArgs() + " аргументов");
+            out.println("пїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅпїЅ " + command +
+                    " пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ " + spec.minArgs() + " пїЅпїЅ " + spec.maxArgs() + " пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
             return false;
         }
         return spec.handler().handle(args, out);
     }
 
     /**
-     * Регистрация стандартных команд.
+     * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.
      */
     private void registerCommands() {
         registry.put("ECHO", new CommandSpec(0, Integer.MAX_VALUE, (args, out) -> {
@@ -200,13 +200,12 @@ public class TcpServer {
             return false;
         }));
 
-        registry.put("TIME", new CommandSpec(0, 0, (args, out) -> {
-            out.println(LocalDateTime.now().toString());
+        registry.put("TIME", new CommandSpec(0, 0, (args, out) -> {out.println(LocalDateTime.now().toString());
             return false;
         }));
 
         registry.put("CLOSE", new CommandSpec(0, 0, (args, out) -> {
-            out.println("Соединение закрыто");
+            out.println("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
             return true;
         }));
 
@@ -219,11 +218,11 @@ public class TcpServer {
                 Path target = Path.of(filename);
                 TransferStats stats = receiveFile(ctx.rawIn(), target, length);
 
-                ctx.out().println("Файл " + filename + " загружен. " +
-                        "Размер: " + stats.bytes() + " байт, " +
-                        "Скорость: " + String.format("%.2f", stats.bitrateKBps()) + " KB/s");
+                ctx.out().println("пїЅпїЅпїЅпїЅ " + filename + " пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. " +
+                        "пїЅпїЅпїЅпїЅпїЅпїЅ: " + stats.bytes() + " пїЅпїЅпїЅпїЅ, " +
+                        "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + String.format("%.2f", stats.bitrateKBps()) + " KB/s");
             } catch (IOException e) {
-                ctx.out().println("Ошибка загрузки файла: " + e.getMessage());
+                ctx.out().println("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: " + e.getMessage());
             }
             return false;
         }));
@@ -233,17 +232,17 @@ public class TcpServer {
             Path source = Path.of(filename);
 
             if (!source.toFile().exists()) {
-                ctx.out().println("Файл " + filename + " не найден");
+                ctx.out().println("пїЅпїЅпїЅпїЅ " + filename + " пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ");
                 return false;
             }
 
             try {
                 TransferStats stats = sendFile(ctx.rawOut(), source);
-                ctx.out().println("Файл " + filename + " отправлен. " +
-                        "Размер: " + stats.bytes() + " байт, " +
-                        "Скорость: " + String.format("%.2f", stats.bitrateKBps()) + " KB/s");
+                ctx.out().println("пїЅпїЅпїЅпїЅ " + filename + " пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. " +
+                        "пїЅпїЅпїЅпїЅпїЅпїЅ: " + stats.bytes() + " пїЅпїЅпїЅпїЅ, " +
+                        "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + String.format("%.2f", stats.bitrateKBps()) + " KB/s");
             } catch (IOException e) {
-                ctx.out().println("Ошибка скачивания файла: " + e.getMessage());
+                ctx.out().println("пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: " + e.getMessage());
             }
             return false;
         }));
@@ -251,12 +250,12 @@ public class TcpServer {
     }
 
     /**
-     * Получает файл от клиента и сохраняет его на сервере.
+     * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
      *
-     * @param in входной поток клиента
-     * @param target путь к файлу, куда сохраняем
-     * @param length ожидаемый размер файла в байтах
-     * @return количество байт и время передачи
+     * @param in пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+     * @param target пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+     * @param length пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+     * @return пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
      */
     private TransferStats receiveFile(InputStream in, Path target, long length) throws IOException {
         try (OutputStream fos = new FileOutputStream(target.toFile())) {
@@ -274,11 +273,11 @@ public class TcpServer {
     }
 
     /**
-     * Отправляет файл клиенту.
+     * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
      *
-     * @param out выходной поток клиента
-     * @param source путь к файлу на сервере
-     * @return количество байт и время передачи
+     * @param out пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+     * @param source пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+     * @return пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
      */
     private TransferStats sendFile(OutputStream out, Path source) throws IOException {
         try (InputStream fis = new FileInputStream(source.toFile())) {
@@ -302,10 +301,10 @@ public class TcpServer {
 package network.lab1.server;
 
 /**
- * Вспомогательный класс для хранения статистики передачи.
+ * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
  *
- * @param bytes количество переданных байт
- * @param nanos время передачи в наносекундах
+ * @param bytes пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+ * @param nanos пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
  */
 public record TransferStats(
         long bytes,
@@ -313,9 +312,9 @@ public record TransferStats(
 ) {
 
     /**
-     * Рассчитывает скорость передачи в килобайтах в секунду.
+     * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
      *
-     * @return скорость передачи (KB/s)
+     * @return пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (KB/s)
      */
     public double bitrateKBps() {
         double seconds = nanos / 1e9;
