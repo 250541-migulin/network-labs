@@ -44,7 +44,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <finalName>lab1-TCP-server</finalName>
+                            <finalName>lab1-server</finalName>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
@@ -62,7 +62,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <finalName>lab1-TCP-client</finalName>
+                            <finalName>lab1-client</finalName>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>

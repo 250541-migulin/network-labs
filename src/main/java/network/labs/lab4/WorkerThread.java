@@ -35,7 +35,7 @@ public class WorkerThread extends Thread {
                     idle = false;
                     log.info("{} обслуживает клиента {}", getName(), client.getRemoteSocketAddress());
                     try {
-                        new TcpServer(0).handleClient(client); // используем логику ЛР1
+                       // new TcpServer(0).handleClient(client); // используем логику ЛР1
                         log.info("Клиент {} обслужен", client.getRemoteSocketAddress());
                     } catch (Exception e) {
                         log.error("Ошибка обработки клиента {}", client.getRemoteSocketAddress(), e);

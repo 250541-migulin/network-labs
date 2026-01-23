@@ -1,4 +1,6 @@
-package network.labs.lab1.server;
+package network.labs.lab4;
+
+import network.labs.lab1.server.TcpServerCommandContext;
 
 import java.net.Socket;
 import java.nio.file.Path;
@@ -15,7 +17,7 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            TcpServerCommandContext ctx = new TcpServerCommandContext(client, serverDir);
+           // TcpServerCommandContext ctx = new TcpServerCommandContext(client, serverDir);
             // та же логика, что в handleClient
         } catch (Exception e) {
             e.printStackTrace();

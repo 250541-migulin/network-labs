@@ -48,4 +48,16 @@ public class IoUtils {
         double rate = kb / seconds;
         return bytes + " байт за " + millis + " мс (" + String.format("%.2f", rate) + " KB/s)";
     }
+
+    public static void skipStream(InputStream in, long bytes) throws IOException {
+        long skipped = 0;
+        while (skipped < bytes) {
+            long s = in.skip(bytes - skipped);
+            if (s == 0) {
+                if (in.read() == -1) break;
+                s = 1;
+            }
+            skipped += s;
+        }
+    }
 }

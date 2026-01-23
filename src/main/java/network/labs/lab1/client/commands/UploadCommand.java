@@ -35,7 +35,25 @@ public class UploadCommand implements Command<FileAwareContext> {
         ctx.writeLine(String.valueOf(fileSize));
 
         try (InputStream fis = Files.newInputStream(file)) {
-            IoUtils.copyStream(fis, ctx.outputStream(), fileSize);
+            long sent = 0;
+            byte[] buffer = new byte[8192];
+            int lastPercent = -1;
+
+            while (sent < fileSize) {
+                int toSend = (int) Math.min(buffer.length, fileSize - sent);
+                int read = fis.read(buffer, 0, toSend);
+                if (read == -1) break;
+
+                ctx.outputStream().write(buffer, 0, read);
+                ctx.outputStream().flush();
+                sent += read;
+
+                int percent = (int) (sent * 100 / fileSize);
+                if (percent != lastPercent && percent % 10 == 0) {
+                    System.out.println("Прогресс: " + percent + "% (" + sent + " / " + fileSize + " байт)");
+                    lastPercent = percent;
+                }
+            }
         }
 
         String finalResponse = ctx.readLine();
