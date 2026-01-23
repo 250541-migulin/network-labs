@@ -45,7 +45,7 @@ public class TcpServer {
         }
     }
 
-    private void handleClient(Socket client) {
+    public void handleClient(Socket client) {
         try (client) {
             TcpServerCommandContext ctx = new TcpServerCommandContext(client, serverDir);
 

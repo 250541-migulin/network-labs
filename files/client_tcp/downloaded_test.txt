@@ -1,727 +1,656 @@
-}
-                byte[] data = line.getBytes(StandardCharsets.UTF_8);
-                fos.write(data);
-                received += data.length;
-            }
-            System.out.println("? Download complete: " + received + " bytes");
-        }
-    }
+=== Полные пути + содержимое файлов из D:\untitled\src\main\java\network\labs\lab1 ===
 
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅ UPLOAD */
-    public void upload(String filename) throws IOException {
-        File file = new File(filename);
-        if (!file.exists()) {
-            System.out.println("File not found: " + filename);
-            return;
-        }
-        long size = file.length();
-        sendLine(Protocol.CMD_UPLOAD + " " + file.getName() + " " + size);
-        String resp = recvLine();
-        if (!resp.startsWith(Protocol.CTRL_READY)) {
-            System.out.println("Server error: " + resp);
-            return;
-        }
-        System.out.println("? Uploading " + filename + " (" + size + " bytes)");
-
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = fis.read(buffer)) != -1) {
-                DatagramPacket packet = new DatagramPacket(buffer, read, serverAddr, port);
-                socket.send(packet);
-            }
-        }
-        System.out.println("Server: " + recvLine()); // CTRL:END
-    }
-
-    public void close() {
-        socket.close();
-    }
-
-    public static void main(String[] args) throws Exception {
-        UdpClient client = new UdpClient("localhost", 9999);
-
-        client.time();
-        client.ping();
-
-        client.upload("test.txt");
-        client.download("test.txt");
-
-        client.close();
-    }
-}
-
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\client\UdpNioClient.java =====
-package network.labs.lab3.client;
-
-import network.labs.lab3.server.Protocol;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.charset.StandardCharsets;
-
-public class UdpNioClient {
-    public static void main(String[] args) throws IOException {
-        InetSocketAddress addr = new InetSocketAddress("localhost", 9999);
-        try (DatagramChannel channel = DatagramChannel.open()) {
-            channel.configureBlocking(true);
-
-            System.out.println("?? UDP пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
-
-            sendLine(channel, addr, Protocol.CMD_PING);
-            readResponse(channel);
-
-            sendLine(channel, addr, Protocol.CMD_TIME);
-            readResponse(channel);
-
-            sendLine(channel, addr, Protocol.CMD_ECHO + " Hello UDP!");
-            readResponse(channel);
-
-            sendLine(channel, addr, Protocol.CMD_CLOSE);
-            readResponse(channel);
-        }
-    }
-
-    private static void sendLine(DatagramChannel ch, SocketAddress addr, String line) throws IOException {
-        ByteBuffer out = StandardCharsets.UTF_8.encode(line + Protocol.CRLF);
-        ch.send(out, addr);
-        System.out.println("?? UDP пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + line);
-    }
-
-    private static void readResponse(DatagramChannel ch) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(8192);
-        SocketAddress src = ch.receive(buf);
-        if (src != null) {
-            buf.flip();
-            String resp = StandardCharsets.UTF_8.decode(buf).toString().trim();
-            System.out.println("?? UDP пїЅпїЅпїЅпїЅпїЅ: " + resp);
-        }
-    }
-}
-
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\ClientContext.java =====
-package network.labs.lab3.server;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.SocketChannel;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.LocalDateTime;
-import java.util.ArrayDeque;
-import java.util.Deque;
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\MainClient.java =====
+package network.labs.lab1.client;
 
 /**
- * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ TCP-пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.
+ * Запуск TCP-клиента.
+ * Аргументы: [host] [port]
  */
-public class ClientContext {
-    private final SocketChannel channel;
-    private final ByteBuffer readBuf = ByteBuffer.allocate(4096);
-    private final Deque<ByteBuffer> outQueue = new ArrayDeque<>();
-
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
-    private FileChannel fileChannel;
-    private long filePos = 0;
-    private long fileSize = 0;
-    private boolean sendingFile = false;
-    private boolean receivingFile = false;
-
-    public ClientContext(SocketChannel channel) {
-        this.channel = channel;
-    }
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
-    public void read() throws IOException {
-        int n = channel.read(readBuf);
-        if (n == -1) throw new IOException("Client closed");
-        readBuf.flip();
-
-        // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
-        if (receivingFile && fileChannel != null) {
-            while (readBuf.hasRemaining()) {
-                fileChannel.write(readBuf);
-                filePos += n;
-            }
-            readBuf.clear();
-            if (filePos >= fileSize) {
-                receivingFile = false;
-                fileChannel.close();
-                enqueue(Protocol.CTRL_DONE + Protocol.CRLF);
-            }
-            return;
-        }
-
-        // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
-        while (readBuf.hasRemaining()) {
-            byte b = readBuf.get();
-            if (b == '\n') {
-                String cmd = new String(readBuf.array(), 0, readBuf.position()).trim();
-                handleCommand(cmd);
-                readBuf.clear();
-                break;
-            }
-        }
-        readBuf.compact();
-    }
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ */
-    private void handleCommand(String cmd) {
-        if (cmd.equalsIgnoreCase(Protocol.CMD_TIME)) {
-            enqueue("Server time: " + LocalDateTime.now() + Protocol.CRLF);
-        } else if (cmd.equalsIgnoreCase(Protocol.CMD_PING)) {
-            enqueue("PONG" + Protocol.CRLF);
-        } else if (cmd.startsWith(Protocol.CMD_DOWNLOAD)) {
-            String[] parts = cmd.split(" ");
-            if (parts.length < 2) {
-                enqueue(Protocol.CTRL_ERROR + " usage DOWNLOAD <filename>" + Protocol.CRLF);
-                return;
-            }
-            Path file = Path.of("files/server_tcp", parts[1]);
-            try {
-                fileChannel = FileChannel.open(file, StandardOpenOption.READ);
-                fileSize = fileChannel.size();
-                filePos = 0;
-                sendingFile = true;
-                enqueue(Protocol.CTRL_READY + " " + fileSize + Protocol.CRLF);
-            } catch (IOException e) {
-                enqueue(Protocol.CTRL_ERROR + " file not found" + Protocol.CRLF);
-            }
-        } else if (cmd.startsWith(Protocol.CMD_UPLOAD)) {
-            String[] parts = cmd.split(" ");
-            if (parts.length < 3) {
-                enqueue(Protocol.CTRL_ERROR + " usage UPLOAD <filename> <size>" + Protocol.CRLF);
-                return;
-            }
-            Path file = Path.of("files/server_tcp", parts[1]);
-            try {
-                fileSize = Long.parseLong(parts[2]);
-                fileChannel = FileChannel.open(file,
-                        StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
-                filePos = 0;
-                receivingFile = true;
-                enqueue(Protocol.CTRL_READY + Protocol.CRLF);
-            } catch (IOException e) {
-                enqueue(Protocol.CTRL_ERROR + " cannot open file for writing" + Protocol.CRLF);
-            }
-        } else {
-            enqueue(Protocol.CTRL_ERROR + " unknown command" + Protocol.CRLF);
-        }
-    }
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
-    public void enqueue(String msg) {
-        outQueue.add(ByteBuffer.wrap(msg.getBytes()));
-    }
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
-    public void write() throws IOException {
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
-        while (!outQueue.isEmpty()) {
-            ByteBuffer buf = outQueue.peek();
-            channel.write(buf);
-            if (!buf.hasRemaining()) outQueue.poll();
-            else return;
-        }
-
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-        if (sendingFile && fileChannel != null) {
-            ByteBuffer buf = ByteBuffer.allocate(8192); // пїЅпїЅпїЅпїЅпїЅпїЅ ~8KB
-            int read = fileChannel.read(buf, filePos);
-            if (read == -1) {
-                sendingFile = false;
-                fileChannel.close();
-                enqueue(Protocol.CTRL_DONE + Protocol.CRLF);
-                return;
-            }
-            buf.flip();
-            channel.write(buf);
-            filePos += read;
-        }
-    }
-
-    public boolean hasPendingWrites() {
-        return !outQueue.isEmpty() || sendingFile;
+public class MainClient {
+    public static void main(String[] args) {
+        String host = args.length > 0 ? args[0] : "localhost";
+        int port = args.length > 1 ? Integer.parseInt(args[1]) : 8888;
+        new TcpClient(host, port).start();
     }
 }
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\Command.java =====
-package network.labs.lab3.server;
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\TcpClient.java =====
+package network.labs.lab1.client;
+
+import network.labs.lab1.client.commands.*;
+import network.labs.lab1.common.*;
+import network.labs.lab2.util.PathsConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.nio.file.Path;
+import java.util.Scanner;
+
+/**
+ * TCP-клиент для ЛР №1.
+ * Поддерживает keepalive и таймауты для обнаружения обрывов.
+ */
+public class TcpClient {
+    private static final Logger log = LoggerFactory.getLogger(TcpClient.class);
+    private final String host;
+    private final int port;
+    private final Path clientDir;
+
+    public TcpClient(String host, int port) {
+        this.host = host;
+        this.port = port;
+        this.clientDir = PathsConfig.CLIENT_TCP;
+        FileUtils.ensureDirectory(clientDir);
+    }
+
+    public void start() {
+        try (Socket socket = new Socket(host, port)) {
+            // Настройка keepalive для обнаружения обрывов
+            socket.setKeepAlive(true);
+            socket.setSoTimeout(120_000); // 2 минуты на ответ
+
+            TcpClientCommandContext ctx = new TcpClientCommandContext(socket, clientDir);
+            log.info("Подключено к TCP {}:{}", host, port);
+
+            CommandRegistry<CommandContext> textRegistry = createTextRegistry();
+            CommandRegistry<FileAwareContext> fileRegistry = createFileRegistry();
+
+            Scanner scanner = new Scanner(System.in, "UTF-8");
+            boolean running = true;
+
+            while (running) {
+                System.out.print("> ");
+                String line = scanner.nextLine().trim();
+                if (line.isEmpty()) continue;
+
+                String cmd = line.split("\\s+")[0].toUpperCase();
+
+                try {
+                    if ("UPLOAD".equals(cmd) || "DOWNLOAD".equals(cmd)) {
+                        CommandResult res = fileRegistry.dispatch(line, ctx);
+                        if (res == CommandResult.CLOSE) running = false;
+                    } else {
+                        CommandResult res = textRegistry.dispatch(line, ctx);
+                        if (res == CommandResult.CLOSE) running = false;
+                    }
+                } catch (IOException e) {
+                    log.error("Ошибка связи", e);
+                    System.err.println("Соединение разорвано: " + e.getMessage());
+                    running = false;
+                }
+            }
+        } catch (IOException e) {
+            log.error("Не удалось подключиться", e);
+            System.err.println("Ошибка подключения: " + e.getMessage());
+        }
+    }
+
+    private CommandRegistry<CommandContext> createTextRegistry() {
+        CommandRegistry<CommandContext> reg = new CommandRegistry<>();
+        reg.register(new EchoCommand());
+        reg.register(new TimeCommand());
+        reg.register(new CloseCommand());
+        reg.register(new UnknownCommand());
+        return reg;
+    }
+
+    private CommandRegistry<FileAwareContext> createFileRegistry() {
+        CommandRegistry<FileAwareContext> reg = new CommandRegistry<>();
+        reg.register(new UploadCommand());
+        reg.register(new DownloadCommand());
+        return reg;
+    }
+}
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\TcpClientCommandContext.java =====
+package network.labs.lab1.client;
+
+import network.labs.lab1.common.CommandContext;
+import network.labs.lab1.common.FileAwareContext;
+import network.labs.lab1.common.IoUtils;
+
+import java.io.*;
+import java.net.Socket;
+import java.nio.file.Path;
+
+/**
+ * Контекст TCP-клиента.
+ * Реализует оба интерфейса для совместимости с командами.
+ */
+public class TcpClientCommandContext implements FileAwareContext {
+    private final InputStream in;
+    private final OutputStream out;
+    private final Path clientDir;
+
+    public TcpClientCommandContext(Socket socket, Path clientDir) throws IOException {
+        this.in = socket.getInputStream();
+        this.out = socket.getOutputStream();
+        this.clientDir = clientDir;
+    }
+
+    @Override
+    public void writeLine(String line) throws IOException {
+        IoUtils.writeLine(out, line);
+    }
+
+    @Override
+    public String readLine() throws IOException {
+        return IoUtils.readLine(in);
+    }
+
+    @Override
+    public Path filesDir() {
+        return clientDir;
+    }
+
+    @Override
+    public InputStream inputStream() {
+        return in;
+    }
+
+    @Override
+    public OutputStream outputStream() {
+        return out;
+    }
+}
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\commands\CloseCommand.java =====
+package network.labs.lab1.client.commands;
+
+import network.labs.lab1.common.*;
+
+import java.io.IOException;
+
+public class CloseCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.CLOSE.key();
+    }
+
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        ctx.writeLine(CommandName.CLOSE.key());
+        String response = ctx.readLine();
+        System.out.println("Сервер: " + response);
+        return CommandResult.CLOSE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\commands\DownloadCommand.java =====
+package network.labs.lab1.client.commands;
+
+import network.labs.lab1.common.*;
+import java.io.*;
+import java.nio.file.*;
+
+public class DownloadCommand implements Command<FileAwareContext> {
+    @Override
+    public String name() {
+        return CommandName.DOWNLOAD.key();
+    }
+
+    @Override
+    public CommandResult execute(String[] args, FileAwareContext ctx) throws IOException {
+        if (args.length < 1) {
+            System.out.println("Использование: DOWNLOAD <имя файла>");
+            return CommandResult.ERROR;
+        }
+        String filename = args[0];
+
+        ctx.writeLine(CommandName.DOWNLOAD.key() + " " + filename);
+        String status = ctx.readLine();
+        if (status == null || status.startsWith("ОШИБКА")) {
+            System.out.println("Сервер: " + status);
+            return CommandResult.ERROR;
+        }
+        if (!"ОК".equals(status)) {
+            System.out.println("Неожиданный ответ сервера: " + status);
+            return CommandResult.ERROR;
+        }
+
+        String sizeLine = ctx.readLine();
+        long fileSize = Long.parseLong(sizeLine.trim());
+        Path target = ctx.filesDir().resolve("downloaded_" + filename);
+
+        try (OutputStream fos = Files.newOutputStream(target)) {
+            IoUtils.copyStream(ctx.inputStream(), fos, fileSize);
+        }
+
+        String finalMsg = ctx.readLine();
+        System.out.println("Сервер: " + finalMsg);
+        System.out.println("Файл сохранён: " + target.getFileName());
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\commands\EchoCommand.java =====
+package network.labs.lab1.client.commands;
+
+import network.labs.lab1.common.*;
+
+import java.io.IOException;
+
+/**
+ * Клиентская команда ECHO: отправляет и выводит ответ.
+ */
+public class EchoCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.ECHO.key();
+    }
+
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        ctx.writeLine(CommandName.ECHO.key() + " " + String.join(" ", args));
+        String response = ctx.readLine();
+        System.out.println("Сервер: " + response);
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\commands\TimeCommand.java =====
+package network.labs.lab1.client.commands;
+
+import network.labs.lab1.common.*;
+
+import java.io.IOException;
+
+public class TimeCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.TIME.key();
+    }
+
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        ctx.writeLine(CommandName.TIME.key());
+        String response = ctx.readLine();
+        System.out.println("Сервер: " + response);
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\commands\UnknownCommand.java =====
+package network.labs.lab1.client.commands;
+
+import network.labs.lab1.common.*;
+
+import java.io.IOException;
+
+public class UnknownCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.UNKNOWN.key();
+    }
+
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        String line = CommandName.UNKNOWN.key() + " " + String.join(" ", args);
+        ctx.writeLine(line);
+        String response = ctx.readLine();
+        System.out.println("Сервер: " + response);
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\client\commands\UploadCommand.java =====
+package network.labs.lab1.client.commands;
+
+import network.labs.lab1.common.*;
+import java.io.*;
+import java.nio.file.*;
+
+public class UploadCommand implements Command<FileAwareContext> {
+    @Override
+    public String name() {
+        return CommandName.UPLOAD.key();
+    }
+
+    @Override
+    public CommandResult execute(String[] args, FileAwareContext ctx) throws IOException {
+        if (args.length < 1) {
+            System.out.println("Использование: UPLOAD <имя файла>");
+            return CommandResult.ERROR;
+        }
+        String filename = args[0];
+        Path file = ctx.filesDir().resolve(filename);
+
+        if (!Files.exists(file)) {
+            System.out.println("Файл не найден: " + file.toAbsolutePath());
+            return CommandResult.ERROR;
+        }
+
+        ctx.writeLine(CommandName.UPLOAD.key() + " " + filename);
+        String response = ctx.readLine();
+        if (response == null || response.startsWith("ОШИБКА")) {
+            System.out.println("Сервер: " + response);
+            return CommandResult.ERROR;
+        }
+
+        long fileSize = Files.size(file);
+        ctx.writeLine(String.valueOf(fileSize));
+
+        try (InputStream fis = Files.newInputStream(file)) {
+            IoUtils.copyStream(fis, ctx.outputStream(), fileSize);
+        }
+
+        String finalResponse = ctx.readLine();
+        System.out.println("Сервер: " + finalResponse);
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\Command.java =====
+package network.labs.lab1.common;
 
 import java.io.IOException;
 
 public interface Command<C> {
     String name();
-    void execute(String[] args, C ctx) throws IOException;
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\CommandRegistry.java =====
-package network.labs.lab3.server;
+    CommandResult execute(String[] args, C ctx) throws IOException;
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\CommandContext.java =====
+package network.labs.lab1.common;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-public class CommandRegistry<C> {
+/**
+ * Базовый интерфейс для выполнения команд.
+ * Абстрагирует транспорт (TCP/UDP).
+ */
+public interface CommandContext {
+    void writeLine(String line) throws IOException;
+    String readLine() throws IOException;
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\CommandName.java =====
+package network.labs.lab1.common;
+
+public enum CommandName {
+    ECHO("ECHO"),
+    TIME("TIME"),
+    UPLOAD("UPLOAD"),
+    DOWNLOAD("DOWNLOAD"),
+    CLOSE("CLOSE"),
+    UNKNOWN("UNKNOWN");
+
+    private final String key;
+    CommandName(String key) { this.key = key; }
+    public String key() { return key; }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\CommandRegistry.java =====
+package network.labs.lab1.common;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+
+public class CommandRegistry<C extends CommandContext> {
+    private static final Logger log = LoggerFactory.getLogger(CommandRegistry.class);
     private final Map<String, Command<C>> commands = new HashMap<>();
-    private final Command<C> unknown;
-
-    public CommandRegistry(Command<C> unknown) {
-        this.unknown = unknown;
-    }
 
     public void register(Command<C> cmd) {
         commands.put(cmd.name().toUpperCase(), cmd);
     }
 
-    public void dispatch(String line, C ctx) throws IOException {
-        if (line == null || line.isBlank()) return;
-        String[] parts = line.trim().split("\\s+");
-        String cmdName = parts[0].toUpperCase();
-        Command<C> cmd = commands.getOrDefault(cmdName, unknown);
-        cmd.execute(parts, ctx);
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\NioServer.java =====
-package network.labs.lab3.server;
+    public CommandResult dispatch(String line, C ctx) throws IOException {
+        String[] parts = line.trim().split("\\s+", 2);
+        String cmdName = parts.length > 0 ? parts[0].toUpperCase() : "";
+        String argsLine = parts.length > 1 ? parts[1] : "";
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.*;
-import java.nio.file.Path;
-import java.util.Iterator;
-
-public class NioServer {
-    private final int tcpPort;
-    private final int udpPort;
-    private final Path tcpDir;
-    private final Path udpDir;
-
-    public NioServer(int tcpPort, int udpPort, Path tcpDir, Path udpDir) {
-        this.tcpPort = tcpPort;
-        this.udpPort = udpPort;
-        this.tcpDir = tcpDir;
-        this.udpDir = udpDir;
-    }
-
-    public void start() throws IOException {
-        Selector selector = Selector.open();
-
-        // TCP пїЅпїЅпїЅпїЅпїЅпїЅ
-        ServerSocketChannel tcpServer = ServerSocketChannel.open();
-        tcpServer.configureBlocking(false);
-        tcpServer.bind(new InetSocketAddress(tcpPort));
-        tcpServer.register(selector, SelectionKey.OP_ACCEPT);
-
-        // UDP пїЅпїЅпїЅпїЅпїЅпїЅ
-        DatagramChannel udpServer = DatagramChannel.open();
-        udpServer.configureBlocking(false);
-        udpServer.bind(new InetSocketAddress(udpPort));
-        udpServer.register(selector, SelectionKey.OP_READ);
-
-        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
-        var tcpTextReg = ServerCommandsFactory.createTcpTextRegistry();
-        var tcpFileReg = ServerCommandsFactory.createTcpFileRegistry(tcpDir);
-        var udpReg = ServerCommandsFactory.createUdpRegistry(udpDir);
-
-        ByteBuffer buf = ByteBuffer.allocate(8192);
-
-        System.out.println("?? NIO-пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: TCP=" + tcpPort + ", UDP=" + udpPort);
-
-        while (true) {
-            selector.select();
-            Iterator<SelectionKey> it = selector.selectedKeys().iterator();
-            while (it.hasNext()) {
-                SelectionKey key = it.next();
-                it.remove();
-
-                if (!key.isValid()) continue;
-
-                // TCP: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-                if (key.isAcceptable()) {
-                    SocketChannel ch = tcpServer.accept();
-                    ch.configureBlocking(false);
-                    ch.register(selector, SelectionKey.OP_READ);
-                    System.out.println("?? TCP-пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + ch.getRemoteAddress());
-                }
-
-                // TCP: пїЅпїЅпїЅпїЅпїЅпїЅ
-                if (key.isReadable() && key.channel() instanceof SocketChannel) {
-                    SocketChannel ch = (SocketChannel) key.channel();
-                    TcpNioContext ctx = new TcpNioContext(ch, tcpDir);
-
-                    String line = ctx.readLine();
-                    if (line == null) {
-                        ch.close();
-                        continue;
-                    }
-                    if (line.isEmpty()) continue;
-
-                    String cmd = line.split("\\s+")[0].toUpperCase();
-                    if (Protocol.CMD_UPLOAD.equals(cmd) || Protocol.CMD_DOWNLOAD.equals(cmd)) {
-                        tcpFileReg.dispatch(line, ctx);
-                    } else {
-                        tcpTextReg.dispatch(line, ctx);
-                    }
-                }
-
-                // UDP: пїЅпїЅпїЅпїЅпїЅпїЅ
-                if (key.isReadable() && key.channel() instanceof DatagramChannel) {
-                    DatagramChannel dc = (DatagramChannel) key.channel();
-                    buf.clear();
-                    SocketAddress src = dc.receive(buf);
-                    if (src == null) continue;
-                    buf.flip();
-                    String line = new String(buf.array(), 0, buf.limit()).trim();
-                    if (line.isEmpty()) continue;
-
-                    UdpNioContext ctx = new UdpNioContext(dc, src, udpDir);
-                    udpReg.dispatch(line, ctx);
-                }
+        Command<C> cmd = commands.get(cmdName);
+        if (cmd == null) {
+            cmd = commands.get(CommandName.UNKNOWN.key());
+            if (cmd == null) {
+                ctx.writeLine("ОШИБКА: неизвестная команда");
+                return CommandResult.ERROR;
             }
+            return cmd.execute(new String[]{line}, ctx);
         }
-    }
 
-    public static void main(String[] args) throws Exception {
-        Path tcpDir = Path.of("files/server_tcp");
-        Path udpDir = Path.of("files/server_udp");
-        new NioServer(8888, 9999, tcpDir, udpDir).start();
+        String[] args = argsLine.isEmpty() ? new String[0] : argsLine.split("\\s+");
+        return cmd.execute(args, ctx);
     }
 }.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\Protocol.java =====
-package network.labs.lab3.server;
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\CommandResult.java =====
+package network.labs.lab1.common;
 
-/**
- * пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Lab2/Lab3.
- * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ TCP, пїЅ UDP пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
- */
-public final class Protocol {
-    private Protocol() {}
-
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-    public static final String CMD_TIME     = "TIME";
-    public static final String CMD_PING     = "PING";
-    public static final String CMD_UPLOAD   = "UPLOAD";   // UPLOAD <filename> <size>
-    public static final String CMD_DOWNLOAD = "DOWNLOAD"; // DOWNLOAD <filename>
-    public static final String CMD_ECHO     = "ECHO";
-    public static final String CMD_CLOSE = "CLOSE";
-
-
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
-    public static final String CTRL_READY   = "CTRL:READY"; // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅ
-    public static final String CTRL_END     = "CTRL:END";   // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (UDP)
-    public static final String CTRL_DONE    = "CTRL:DONE";  // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (TCP)
-    public static final String CTRL_ERROR   = "CTRL:ERROR"; // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
-    public static final String CRLF = "\r\n";
-
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
-    public static final int TCP_CHUNK_SIZE = 8 * 1024;
-    public static final int UDP_CHUNK_SIZE = 1300; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ MTU ~1500
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\ServerCommandsFactory.java =====
-package network.labs.lab3.server;
-
-import network.labs.lab3.server.commands.*;
-
-import java.nio.file.Path;
-
-/**
- * пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ Lab3.
- * TCP > пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅ
- * UDP > пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅ
- */
-public final class ServerCommandsFactory {
-    private ServerCommandsFactory() {}
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅ TCP-пїЅпїЅпїЅпїЅпїЅпїЅ */
-    public static CommandRegistry<TcpNioContext> createTcpTextRegistry() {
-        CommandRegistry<TcpNioContext> reg = new CommandRegistry<>(new UnknownCommandTcp());
-        reg.register(new EchoCommandTcp());
-        reg.register(new TimeCommandTcp());
-        reg.register(new PingCommandTcp());
-        reg.register(new CloseCommandTcp());
-        return reg;
-    }
-
-    public static CommandRegistry<TcpNioContext> createTcpFileRegistry(Path serverDir) {
-        CommandRegistry<TcpNioContext> reg = new CommandRegistry<>(new UnknownCommandTcp());
-        reg.register(new UploadCommandTcp(serverDir));
-        reg.register(new DownloadCommandTcp(serverDir));
-        return reg;
-    }
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅ UDP-пїЅпїЅпїЅпїЅпїЅпїЅ */
-    public static CommandRegistry<UdpNioContext> createUdpRegistry(Path serverDir) {
-        CommandRegistry<UdpNioContext> reg = new CommandRegistry<>(new UnknownCommandUdp());
-        reg.register(new EchoCommandUdp());
-        reg.register(new TimeCommandUdp());
-        reg.register(new PingCommandUdp());
-        reg.register(new CloseCommandUdp());
-        reg.register(new UploadCommandUdp(serverDir));
-        reg.register(new DownloadCommandUdp(serverDir));
-        return reg;
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\TcpNioCommandContext.java =====
-package network.labs.lab3.server;
-
-import network.labs.lab1.common.CommandContext;
-import network.labs.lab1.common.FileAwareContext;
-
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
-
-public class TcpNioCommandContext implements CommandContext, FileAwareContext {
-    private final SocketChannel channel;
-    private final Path serverDir;
-    private final ByteBuffer buf = ByteBuffer.allocate(8192);
-
-    public TcpNioCommandContext(SocketChannel channel, Path serverDir) {
-        this.channel = channel;
-        this.serverDir = serverDir;
-    }
-
-    @Override
-    public void writeLine(String line) throws IOException {
-        ByteBuffer out = StandardCharsets.UTF_8.encode(line + Protocol.CRLF);
-        channel.write(out);
-    }
-
-    @Override
-    public String readLine() throws IOException {
-        buf.clear();
-        int n = channel.read(buf);
-        if (n == -1) return null;
-        buf.flip();
-        return StandardCharsets.UTF_8.decode(buf).toString().trim();
-    }
-
-    @Override
-    public Path filesDir() {
-        return serverDir;
-    }
-
-    @Override
-    public InputStream inputStream() throws IOException {
-        return channel.socket().getInputStream();
-    }
-
-    @Override
-    public OutputStream outputStream() throws IOException {
-        return channel.socket().getOutputStream();
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\TcpNioContext.java =====
-package network.labs.lab3.server;
+public enum CommandResult {
+    CONTINUE,
+    CLOSE,
+    ERROR
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\FileAwareContext.java =====
+package network.labs.lab1.common;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
-
-public class TcpNioContext {
-    private final SocketChannel channel;
-    private final Path serverDir;
-    private final ByteBuffer readBuf = ByteBuffer.allocate(64 * 1024);
-
-    public TcpNioContext(SocketChannel channel, Path serverDir) {
-        this.channel = channel;
-        this.serverDir = serverDir;
-    }
-
-    public InetSocketAddress remote() throws IOException {
-        return (InetSocketAddress) channel.getRemoteAddress();
-    }
-
-    public Path filesDir() {
-        return serverDir;
-    }
-
-    public String readLine() throws IOException {
-        readBuf.clear();
-        int n = channel.read(readBuf);
-        if (n == -1) return null;
-        readBuf.flip();
-        return StandardCharsets.UTF_8.decode(readBuf).toString().trim();
-    }
-
-    public void writeLine(String line) throws IOException {
-        ByteBuffer out = StandardCharsets.UTF_8.encode(line + Protocol.CRLF);
-        while (out.hasRemaining()) channel.write(out);
-    }
-
-    public void writeBytes(byte[] bytes, int off, int len) throws IOException {
-        ByteBuffer out = ByteBuffer.wrap(bytes, off, len);
-        while (out.hasRemaining()) channel.write(out);
-    }
-
-    public int chunkSize() {
-        return Protocol.TCP_CHUNK_SIZE;
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\UdpContext.java =====
-package network.labs.lab3.server;
-
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
 
 /**
- * пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ UDP-пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.
+ * Контекст с поддержкой файловых операций.
+ * Расширяет CommandContext.
  */
-public class UdpContext {
-    private final SocketAddress clientAddr;
+public interface FileAwareContext extends CommandContext {
+    Path filesDir();
+    InputStream inputStream() throws IOException;
+    OutputStream outputStream() throws IOException;
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\FileUtils.java =====
+package network.labs.lab1.common;
 
-    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
-    private FileInputStream fis;
-    private FileOutputStream fos;
-    private long fileSize = 0;
-    private long filePos = 0;
-    private boolean sendingFile = false;
-    private boolean receivingFile = false;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    public UdpContext(SocketAddress clientAddr) {
-        this.clientAddr = clientAddr;
-    }
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ */
-    public void onPacket(ByteBuffer buf, DatagramChannel dc, SocketAddress src) {
-        String msg = new String(buf.array(), 0, buf.limit()).trim();
+public class FileUtils {
+    private static final Logger log = LoggerFactory.getLogger(FileUtils.class);
 
-        // пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
-        if (receivingFile && fos != null) {
-            try {
-                fos.write(buf.array(), 0, buf.limit());
-                filePos += buf.limit();
-                if (filePos >= fileSize) {
-                    receivingFile = false;
-                    fos.close();
-                    sendLine(dc, Protocol.CTRL_END);
-                }
-            } catch (IOException e) {
-                sendLine(dc, Protocol.CTRL_ERROR + " write failed");
-            }
-            return;
-        }
-
-        // пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-        if (msg.equalsIgnoreCase(Protocol.CMD_TIME)) {
-            sendLine(dc, "Server time: " + LocalDateTime.now());
-        } else if (msg.equalsIgnoreCase(Protocol.CMD_PING)) {
-            sendLine(dc, "PONG");
-        } else if (msg.startsWith(Protocol.CMD_DOWNLOAD)) {
-            String[] parts = msg.split(" ");
-            if (parts.length < 2) {
-                sendLine(dc, Protocol.CTRL_ERROR + " usage DOWNLOAD <filename>");
-                return;
-            }
-            Path file = Path.of("files/server_udp", parts[1]);
-            try {
-                fis = new FileInputStream(file.toFile());
-                fileSize = file.toFile().length();
-                filePos = 0;
-                sendingFile = true;
-                sendLine(dc, Protocol.CTRL_READY + " " + fileSize);
-
-                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = fis.read(buffer)) != -1) {
-                    dc.send(ByteBuffer.wrap(buffer, 0, read), clientAddr);
-                    filePos += read;
-                }
-                fis.close();
-                sendingFile = false;
-                sendLine(dc, Protocol.CTRL_END);
-            } catch (IOException e) {
-                sendLine(dc, Protocol.CTRL_ERROR + " file not found");
-            }
-        } else if (msg.startsWith(Protocol.CMD_UPLOAD)) {
-            String[] parts = msg.split(" ");
-            if (parts.length < 3) {
-                sendLine(dc, Protocol.CTRL_ERROR + " usage UPLOAD <filename> <size>");
-                return;
-            }
-            Path file = Path.of("files/server_udp", parts[1]);
-            try {
-                fileSize = Long.parseLong(parts[2]);
-                fos = new FileOutputStream(file.toFile());
-                filePos = 0;
-                receivingFile = true;
-                sendLine(dc, Protocol.CTRL_READY);
-            } catch (IOException e) {
-                sendLine(dc, Protocol.CTRL_ERROR + " cannot open file for writing");
-            }
-        } else {
-            sendLine(dc, Protocol.CTRL_ERROR + " unknown command");
-        }
-    }
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ */
-    private void sendLine(DatagramChannel dc, String msg) {
+    public static void ensureDirectory(Path dir) {
         try {
-            dc.send(ByteBuffer.wrap((msg + Protocol.CRLF).getBytes()), clientAddr);
+            if (Files.exists(dir)) {
+                log.info("Директория уже существует: {}", dir.toAbsolutePath());
+            } else {
+                Files.createDirectories(dir);
+                log.info("Создана директория: {}", dir.toAbsolutePath());
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Не удалось создать директорию: {}", dir.toAbsolutePath(), e);
+            throw new IllegalStateException("Не удалось создать директорию: " + dir, e);
         }
     }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\UdpNioCommandContext.java =====
-package network.labs.lab3.server;
-
-import network.labs.lab1.common.CommandContext;
-import network.labs.lab1.common.FileAwareContext;
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\common\IoUtils.java =====
+package network.labs.lab1.common;
 
 import java.io.*;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 
-public class UdpNioCommandContext implements CommandContext, FileAwareContext {
-    private final DatagramChannel channel;
-    private final SocketAddress clientAddr;
+public class IoUtils {
+
+    public static String readLine(InputStream in) throws IOException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        int b;
+        while ((b = in.read()) != -1) {
+            if (b == '\n') break;
+            if (b == '\r') {
+                in.mark(1);
+                int next = in.read();
+                if (next != '\n') in.reset();
+                break;
+            }
+            buf.write(b);
+        }
+        byte[] bytes = buf.toByteArray();
+        return (bytes.length == 0 && b == -1) ? null : new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    public static void writeLine(OutputStream out, String line) throws IOException {
+        out.write(line.getBytes(StandardCharsets.UTF_8));
+        out.write('\r');
+        out.write('\n');
+        out.flush();
+    }
+
+    public static long copyStream(InputStream in, OutputStream out, long length) throws IOException {
+        byte[] buffer = new byte[8192];
+        long total = 0;
+        int read;
+        while (total < length && (read = in.read(buffer, 0, (int) Math.min(buffer.length, length - total))) != -1) {
+            out.write(buffer, 0, read);
+            total += read;
+        }
+        out.flush();
+        return total;
+    }
+
+    public static String formatTransferRate(long bytes, long millis) {
+        if (millis <= 0) return bytes + " байт за " + millis + " мс (—)";
+        double seconds = millis / 1000.0;
+        double kb = bytes / 1024.0;
+        double rate = kb / seconds;
+        return bytes + " байт за " + millis + " мс (" + String.format("%.2f", rate) + " KB/s)";
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\MainServer.java =====
+package network.labs.lab1.server;
+
+/**
+ * Запуск TCP-сервера.
+ * Аргумент: [port]
+ */
+public class MainServer {
+    public static void main(String[] args) {
+        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8888;
+        new TcpServer(port).start();
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\TcpServer.java =====
+package network.labs.lab1.server;
+
+import network.labs.lab1.common.*;
+import network.labs.lab1.server.commands.*;
+import network.labs.lab2.util.PathsConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.nio.file.Path;
+
+/**
+ * Последовательный TCP-сервер (ЛР №1).
+ */
+public class TcpServer {
+    private static final Logger log = LoggerFactory.getLogger(TcpServer.class);
+    private final int port;
     private final Path serverDir;
 
-    public UdpNioCommandContext(DatagramChannel channel, SocketAddress clientAddr, Path serverDir) {
-        this.channel = channel;
-        this.clientAddr = clientAddr;
+    public TcpServer(int port) {
+        this.port = port;
+        this.serverDir = PathsConfig.SERVER_TCP;
+        FileUtils.ensureDirectory(serverDir);
+    }
+
+    public void start() {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            log.info("TCP-сервер запущен на порту {}", port);
+
+            while (true) {
+                Socket client = serverSocket.accept();
+                log.info("Подключился клиент: {}", client.getRemoteSocketAddress());
+
+                client.setKeepAlive(true);
+                client.setSoTimeout(120_000);
+
+                handleClient(client);
+                log.info("Клиент отключился");
+            }
+        } catch (IOException e) {
+            log.error("Сервер остановлен", e);
+        }
+    }
+
+    private void handleClient(Socket client) {
+        try (client) {
+            TcpServerCommandContext ctx = new TcpServerCommandContext(client, serverDir);
+
+            CommandRegistry<CommandContext> textReg = createTextRegistry();
+            CommandRegistry<FileAwareContext> fileReg = createFileRegistry();
+
+            while (true) {
+                String line = ctx.readLine();
+                if (line == null) break;
+
+                String cmd = line.split("\\s+")[0].toUpperCase();
+
+                CommandResult res;
+                if ("UPLOAD".equals(cmd) || "DOWNLOAD".equals(cmd)) {
+                    res = fileReg.dispatch(line, ctx);
+                } else {
+                    res = textReg.dispatch(line, ctx);
+                }
+
+                if (res == CommandResult.CLOSE) break;
+            }
+        } catch (SocketException e) {
+            log.info("Клиент разорвал соединение: {}", e.getMessage());
+        } catch (IOException e) {
+            log.error("Ошибка обработки клиента", e);
+        }
+    }
+
+    private CommandRegistry<CommandContext> createTextRegistry() {
+        CommandRegistry<CommandContext> reg = new CommandRegistry<>();
+        reg.register(new EchoCommand());
+        reg.register(new TimeCommand());
+        reg.register(new CloseCommand());
+        reg.register(new UnknownCommand());
+        return reg;
+    }
+
+    private CommandRegistry<FileAwareContext> createFileRegistry() {
+        CommandRegistry<FileAwareContext> reg = new CommandRegistry<>();
+        reg.register(new UploadCommand(serverDir));
+        reg.register(new DownloadCommand(serverDir));
+        return reg;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\TcpServerCommandContext.java =====
+package network.labs.lab1.server;
+
+import network.labs.lab1.common.FileAwareContext;
+import network.labs.lab1.common.IoUtils;
+
+import java.io.*;
+import java.net.Socket;
+import java.nio.file.Path;
+
+/**
+ * Контекст TCP-сервера.
+ */
+public class TcpServerCommandContext implements FileAwareContext {
+    private final Socket socket;
+    private final InputStream in;
+    private final OutputStream out;
+    private final Path serverDir;
+
+    public TcpServerCommandContext(Socket socket, Path serverDir) throws IOException {
+        this.socket = socket;
+        this.in = socket.getInputStream();
+        this.out = socket.getOutputStream();
         this.serverDir = serverDir;
     }
 
     @Override
     public void writeLine(String line) throws IOException {
-        ByteBuffer out = StandardCharsets.UTF_8.encode(line + Protocol.CRLF);
-        channel.send(out, clientAddr);
+        IoUtils.writeLine(out, line);
     }
 
     @Override
-    public String readLine() {
-        throw new UnsupportedOperationException("UDP readLine пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
+    public String readLine() throws IOException {
+        return IoUtils.readLine(in);
     }
 
     @Override
@@ -731,474 +660,194 @@ public class UdpNioCommandContext implements CommandContext, FileAwareContext {
 
     @Override
     public InputStream inputStream() {
-        throw new UnsupportedOperationException("UDP inputStream пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ UdpContext");
+        return in;
     }
 
     @Override
     public OutputStream outputStream() {
-        return new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                ByteBuffer out = ByteBuffer.allocate(1);
-                out.put((byte) b);
-                out.flip();
-                channel.send(out, clientAddr);
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                ByteBuffer out = ByteBuffer.wrap(b, off, len);
-                channel.send(out, clientAddr);
-            }
-        };
+        return out;
     }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\UdpNioContext.java =====
-package network.labs.lab3.server;
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\commands\CloseCommand.java =====
+package network.labs.lab1.server.commands;
 
+import network.labs.lab1.common.*;
 import java.io.IOException;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 
-public class UdpNioContext {
-    private final DatagramChannel channel;
-    private final SocketAddress clientAddr;
+public class CloseCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.CLOSE.key();
+    }
+
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        ctx.writeLine("Соединение закрыто по запросу");
+        return CommandResult.CLOSE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\commands\DownloadCommand.java =====
+package network.labs.lab1.server.commands;
+
+import network.labs.lab1.common.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.file.*;
+
+public class DownloadCommand implements Command<FileAwareContext> {
+    private static final Logger log = LoggerFactory.getLogger(DownloadCommand.class);
     private final Path serverDir;
 
-    public UdpNioContext(DatagramChannel channel, SocketAddress clientAddr, Path serverDir) {
-        this.channel = channel;
-        this.clientAddr = clientAddr;
-        this.serverDir = serverDir;
-    }
-
-    public SocketAddress remote() {
-        return clientAddr;
-    }
-
-    public Path filesDir() {
-        return serverDir;
-    }
-
-    public void sendLine(String line) throws IOException {
-        ByteBuffer out = StandardCharsets.UTF_8.encode(line + Protocol.CRLF);
-        channel.send(out, clientAddr);
-    }
-
-    public void sendChunk(byte[] bytes, int off, int len) throws IOException {
-        ByteBuffer out = ByteBuffer.wrap(bytes, off, len);
-        channel.send(out, clientAddr);
-    }
-
-    public int chunkSize() {
-        return Protocol.UDP_CHUNK_SIZE;
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\CloseCommandTcp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class CloseCommandTcp implements Command<TcpNioContext> {
-    @Override
-    public String name() { return "CLOSE"; }
-
-    @Override
-    public void execute(String[] args, TcpNioContext ctx) throws IOException {
-        ctx.writeLine("TCP connection closed");
-        ctx.remote().getAddress(); // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("Bye!");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:DONE");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:END");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:CLOSE");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:BYE");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:EXIT");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:STOP");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:FINISH");
-        ctx.writeLine(Protocol.CRLF);
-        ctx.writeLine("CTRL:OVER");
-        ctx.writeLine(Protocol.CRLF);
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\CloseCommandUdp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class CloseCommandUdp implements Command<UdpNioContext> {
-    @Override
-    public String name() { return "CLOSE"; }
-
-    @Override
-    public void execute(String[] args, UdpNioContext ctx) throws IOException {
-        ctx.sendLine("UDP connection closed");
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\DownloadCommandTcp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Path;
-
-public class DownloadCommandTcp implements Command<TcpNioContext> {
-    private final Path serverDir;
-
-    public DownloadCommandTcp(Path serverDir) {
+    public DownloadCommand(Path serverDir) {
         this.serverDir = serverDir;
     }
 
     @Override
-    public String name() { return "DOWNLOAD"; }
+    public String name() {
+        return CommandName.DOWNLOAD.key();
+    }
 
     @Override
-    public void execute(String[] args, TcpNioContext ctx) throws IOException {
-        if (args.length < 2) {
-            ctx.writeLine("TCP DOWNLOAD: filename required");
-            return;
+    public CommandResult execute(String[] args, FileAwareContext ctx) throws IOException {
+        if (args.length < 1) {
+            ctx.writeLine("ОШИБКА: имя файла не указано");
+            return CommandResult.ERROR;
         }
-        String filename = args[1];
-        Path filePath = serverDir.resolve(filename);
+        String filename = args[0];
+        Path source = serverDir.resolve(filename);
 
-        ctx.writeLine(Protocol.CTRL_READY);
-
-        try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
-            byte[] buf = new byte[ctx.chunkSize()];
-            int read;
-            while ((read = fis.read(buf)) != -1) {
-                ctx.writeBytes(buf, 0, read);
-            }
+        if (!Files.exists(source)) {
+            ctx.writeLine("ОШИБКА: файл не найден — " + filename);
+            return CommandResult.ERROR;
         }
 
-        ctx.writeLine(Protocol.CTRL_DONE);
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\DownloadCommandUdp.java =====
-package network.labs.lab3.server.commands;
+        long size = Files.size(source);
+        ctx.writeLine("ОК");
+        ctx.writeLine(String.valueOf(size));
+        log.info("Отправляю файл '{}' ({} байт)", filename, size);
 
-import network.labs.lab3.server.*;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Path;
-
-public class DownloadCommandUdp implements Command<UdpNioContext> {
-    private final Path serverDir;
-
-    public DownloadCommandUdp(Path serverDir) {
-        this.serverDir = serverDir;
-    }
-
-    @Override
-    public String name() { return "DOWNLOAD"; }
-
-    @Override
-    public void execute(String[] args, UdpNioContext ctx) throws IOException {
-        if (args.length < 2) {
-            ctx.sendLine("UDP DOWNLOAD: filename required");
-            return;
+        long start = System.currentTimeMillis();
+        try (InputStream fis = Files.newInputStream(source)) {
+            IoUtils.copyStream(fis, ctx.outputStream(), size);
         }
-        String filename = args[1];
-        Path filePath = serverDir.resolve(filename);
+        long elapsed = System.currentTimeMillis() - start;
 
-        ctx.sendLine(Protocol.CTRL_READY);
-
-        try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
-            byte[] buf = new byte[ctx.chunkSize()];
-            int read;
-            while ((read = fis.read(buf)) != -1) {
-                ctx.sendChunk(buf, 0, read);
-            }
-        }
-
-        ctx.sendLine(Protocol.CTRL_DONE);
+        String rate = IoUtils.formatTransferRate(size, elapsed);
+        log.info("Файл '{}' отправлен: {}", filename, rate);
+        ctx.writeLine("Файл '" + filename + "' отправлен: " + rate);
+        return CommandResult.CONTINUE;
     }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\EchoCommandTcp.java =====
-package network.labs.lab3.server.commands;
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\commands\EchoCommand.java =====
+package network.labs.lab1.server.commands;
 
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class EchoCommandTcp implements Command<TcpNioContext> {
-    @Override
-    public String name() { return "ECHO"; }
-
-    @Override
-    public void execute(String[] args, TcpNioContext ctx) throws IOException {
-        String msg = String.join(" ", args).replaceFirst("ECHO", "").trim();
-        ctx.writeLine("TCP ECHO: " + msg);
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\EchoCommandUdp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class EchoCommandUdp implements Command<UdpNioContext> {
-    @Override
-    public String name() { return "ECHO"; }
-
-    @Override
-    public void execute(String[] args, UdpNioContext ctx) throws IOException {
-        String msg = String.join(" ", args).replaceFirst("ECHO", "").trim();
-        ctx.sendLine("UDP ECHO: " + msg);
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\PingCommandTcp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class PingCommandTcp implements Command<TcpNioContext> {
-    @Override
-    public String name() { return "PING"; }
-
-    @Override
-    public void execute(String[] args, TcpNioContext ctx) throws IOException {
-        ctx.writeLine("TCP PONG");
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\PingCommandUdp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class PingCommandUdp implements Command<UdpNioContext> {
-    @Override
-    public String name() { return "PING"; }
-
-    @Override
-    public void execute(String[] args, UdpNioContext ctx) throws IOException {
-        ctx.sendLine("UDP PONG");
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\TimeCommandTcp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-
-public class TimeCommandTcp implements Command<TcpNioContext> {
-    @Override
-    public String name() { return "TIME"; }
-
-    @Override
-    public void execute(String[] args, TcpNioContext ctx) throws IOException {
-        ctx.writeLine("TCP TIME: " + LocalDateTime.now());
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\TimeCommandUdp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-
-public class TimeCommandUdp implements Command<UdpNioContext> {
-    @Override
-    public String name() { return "TIME"; }
-
-    @Override
-    public void execute(String[] args, UdpNioContext ctx) throws IOException {
-        ctx.sendLine("UDP TIME: " + LocalDateTime.now());
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\UnknownCommandTcp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class UnknownCommandTcp implements Command<TcpNioContext> {
-    @Override
-    public String name() { return "UNKNOWN"; }
-
-    @Override
-    public void execute(String[] args, TcpNioContext ctx) throws IOException {
-        ctx.writeLine("TCP: Unknown command");
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\UnknownCommandUdp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.IOException;
-
-public class UnknownCommandUdp implements Command<UdpNioContext> {
-    @Override
-    public String name() { return "UNKNOWN"; }
-
-    @Override
-    public void execute(String[] args, UdpNioContext ctx) throws IOException {
-        ctx.sendLine("UDP: Unknown command");
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\UploadCommandTcp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Path;
-
-public class UploadCommandTcp implements Command<TcpNioContext> {
-    private final Path serverDir;
-
-    public UploadCommandTcp(Path serverDir) {
-        this.serverDir = serverDir;
-    }
-
-    @Override
-    public String name() { return "UPLOAD"; }
-
-    @Override
-    public void execute(String[] args, TcpNioContext ctx) throws IOException {
-        if (args.length < 2) {
-            ctx.writeLine("TCP UPLOAD: filename required");
-            return;
-        }
-        String filename = args[1];
-        Path filePath = serverDir.resolve(filename);
-
-        ctx.writeLine(Protocol.CTRL_READY);
-
-        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-            byte[] buf = new byte[ctx.chunkSize()];
-            int read;
-            while ((read = ctx.readLine() != null ? ctx.readLine().length() : -1) != -1) {
-                // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
-                fos.write(buf, 0, read);
-                if (read < buf.length) break;
-            }
-        }
-
-        ctx.writeLine(Protocol.CTRL_DONE);
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\server\commands\UploadCommandUdp.java =====
-package network.labs.lab3.server.commands;
-
-import network.labs.lab3.server.*;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Path;
-
-public class UploadCommandUdp implements Command<UdpNioContext> {
-    private final Path serverDir;
-
-    public UploadCommandUdp(Path serverDir) {
-        this.serverDir = serverDir;
-    }
-
-    @Override
-    public String name() { return "UPLOAD"; }
-
-    @Override
-    public void execute(String[] args, UdpNioContext ctx) throws IOException {
-        if (args.length < 2) {
-            ctx.sendLine("UDP UPLOAD: filename required");
-            return;
-        }
-        String filename = args[1];
-        Path filePath = serverDir.resolve(filename);
-
-        ctx.sendLine(Protocol.CTRL_READY);
-
-        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-            // пїЅ UDP пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
-            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
-            ctx.sendLine("UDP UPLOAD: not fully implemented demo");
-        }
-
-        ctx.sendLine(Protocol.CTRL_DONE);
-    }
-}
-.
-===== FILE: D:\untitled\src\main\java\network\labs\lab3\util\FileUtils.java =====
-package network.labs.lab3.util;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import network.labs.lab1.common.*;
 import java.io.IOException;
 
 /**
- * пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅ).
+ * Серверная команда ECHO: возвращает аргументы как есть.
  */
-public final class FileUtils {
-    private FileUtils() {}
-
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ */
-    public static boolean exists(String path) {
-        return new File(path).exists();
+public class EchoCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.ECHO.key();
     }
 
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ */
-    public static long size(String path) {
-        return new File(path).length();
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        ctx.writeLine(String.join(" ", args));
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\commands\TimeCommand.java =====
+package network.labs.lab1.server.commands;
+
+import network.labs.lab1.common.*;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class TimeCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.TIME.key();
     }
 
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ */
-    public static FileInputStream openRead(String path) throws IOException {
-        return new FileInputStream(new File(path));
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        ctx.writeLine("Текущее время: " + now);
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\commands\UnknownCommand.java =====
+package network.labs.lab1.server.commands;
+
+import network.labs.lab1.common.*;
+import java.io.IOException;
+
+public class UnknownCommand implements Command<CommandContext> {
+    @Override
+    public String name() {
+        return CommandName.UNKNOWN.key();
     }
 
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) */
-    public static FileOutputStream openWrite(String path) throws IOException {
-        return new FileOutputStream(new File(path));
+    @Override
+    public CommandResult execute(String[] args, CommandContext ctx) throws IOException {
+        ctx.writeLine("ОШИБКА: неизвестная команда");
+        return CommandResult.CONTINUE;
+    }
+}.
+===== FILE: D:\untitled\src\main\java\network\labs\lab1\server\commands\UploadCommand.java =====
+package network.labs.lab1.server.commands;
+
+import network.labs.lab1.common.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.file.*;
+
+public class UploadCommand implements Command<FileAwareContext> {
+    private static final Logger log = LoggerFactory.getLogger(UploadCommand.class);
+    private final Path serverDir;
+
+    public UploadCommand(Path serverDir) {
+        this.serverDir = serverDir;
     }
 
-    /** пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) */
-    public static FileOutputStream openAppend(String path) throws IOException {
-        return new FileOutputStream(new File(path), true);
+    @Override
+    public String name() {
+        return CommandName.UPLOAD.key();
     }
-}
-.
-CTRL:DONE
-вњ… DOWNLOAD Р·Р°РІРµСЂС€С‘РЅ: 48397 Р±Р°Р№С‚, 1 РјСЃ, ~47262,70 KB/s
+
+    @Override
+    public CommandResult execute(String[] args, FileAwareContext ctx) throws IOException {
+        if (args.length < 1) {
+            ctx.writeLine("ОШИБКА: имя файла не указано");
+            return CommandResult.ERROR;
+        }
+        String filename = args[0];
+        Path target = serverDir.resolve(filename);
+
+        ctx.writeLine("ОК");
+        log.info("Готов принимать файл {}", filename);
+
+        String sizeLine = ctx.readLine();
+        long size = Long.parseLong(sizeLine.trim());
+        log.info("Ожидаем {} байт", size);
+
+        long start = System.currentTimeMillis();
+        try (OutputStream fos = Files.newOutputStream(target)) {
+            long received = IoUtils.copyStream(ctx.inputStream(), fos, size);
+            long elapsed = System.currentTimeMillis() - start;
+
+            String rate = IoUtils.formatTransferRate(received, elapsed);
+            log.info("Файл '{}' загружен: {}", filename, rate);
+            ctx.writeLine("Файл '" + filename + "' загружен: " + rate);
+        }
+        return CommandResult.CONTINUE;
+    }
+}.
