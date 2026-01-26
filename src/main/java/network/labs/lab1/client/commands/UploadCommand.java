@@ -16,6 +16,7 @@ public class UploadCommand implements Command<FileAwareContext> {
             System.out.println("Использование: UPLOAD <имя файла>");
             return CommandResult.ERROR;
         }
+
         String filename = args[0];
         Path file = ctx.filesDir().resolve(filename);
 
@@ -24,23 +25,52 @@ public class UploadCommand implements Command<FileAwareContext> {
             return CommandResult.ERROR;
         }
 
+        long fileSize = Files.size(file);
         ctx.writeLine(CommandName.UPLOAD.key() + " " + filename);
+
+        // Получаем offset от сервера
         String response = ctx.readLine();
-        if (response == null || response.startsWith("ОШИБКА")) {
-            System.out.println("Сервер: " + response);
+        if (response == null || !response.startsWith("OK")) {
+            System.out.println("Сервер: " + (response != null ? response : "соединение закрыто"));
             return CommandResult.ERROR;
         }
 
-        long fileSize = Files.size(file);
-        ctx.writeLine(String.valueOf(fileSize));
+        long offset = 0;
+        if (response.length() > 3) {
+            try {
+                offset = Long.parseLong(response.substring(3).trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Сервер: некорректный offset");
+                return CommandResult.ERROR;
+            }
+        }
 
+        if (offset > fileSize) {
+            System.out.println("Сервер: offset больше размера локального файла");
+            return CommandResult.ERROR;
+        }
+
+        long remaining = fileSize - offset;
+        if (remaining == 0) {
+            System.out.println("Файл уже полностью загружен на сервере!");
+            return CommandResult.CONTINUE;
+        }
+
+        System.out.println("Сервер готов принять " + remaining + " байт (всего: " + fileSize + " байт)");
+
+        // Отправляем размер остатка
+        ctx.writeLine(String.valueOf(remaining));
+
+        // Отправляем данные
         try (InputStream fis = Files.newInputStream(file)) {
+            fis.skipNBytes(offset); // пропускаем уже отправленное
+
             long sent = 0;
             byte[] buffer = new byte[8192];
             int lastPercent = -1;
 
-            while (sent < fileSize) {
-                int toSend = (int) Math.min(buffer.length, fileSize - sent);
+            while (sent < remaining) {
+                int toSend = (int) Math.min(buffer.length, remaining - sent);
                 int read = fis.read(buffer, 0, toSend);
                 if (read == -1) break;
 
@@ -48,9 +78,9 @@ public class UploadCommand implements Command<FileAwareContext> {
                 ctx.outputStream().flush();
                 sent += read;
 
-                int percent = (int) (sent * 100 / fileSize);
+                int percent = (int) ((offset + sent) * 100 / fileSize);
                 if (percent != lastPercent && percent % 10 == 0) {
-                    System.out.println("Прогресс: " + percent + "% (" + sent + " / " + fileSize + " байт)");
+                    System.out.println("Прогресс: " + percent + "% (" + (offset + sent) + " / " + fileSize + " байт)");
                     lastPercent = percent;
                 }
             }

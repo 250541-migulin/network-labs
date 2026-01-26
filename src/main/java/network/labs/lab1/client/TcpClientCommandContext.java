@@ -5,19 +5,18 @@ import network.labs.lab1.common.FileAwareContext;
 import network.labs.lab1.common.IoUtils;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.Path;
 
-/**
- * Контекст TCP-клиента.
- * Реализует оба интерфейса для совместимости с командами.
- */
 public class TcpClientCommandContext implements FileAwareContext {
+    private final Socket socket;
     private final InputStream in;
     private final OutputStream out;
     private final Path clientDir;
 
     public TcpClientCommandContext(Socket socket, Path clientDir) throws IOException {
+        this.socket = socket;
         this.in = socket.getInputStream();
         this.out = socket.getOutputStream();
         this.clientDir = clientDir;
@@ -46,5 +45,17 @@ public class TcpClientCommandContext implements FileAwareContext {
     @Override
     public OutputStream outputStream() {
         return out;
+    }
+
+    @Override
+    public Socket getSocket() {
+        return socket;
+    }
+
+    @Override
+    public InetAddress getClientIp() {
+        // На клиенте "client IP" — это localhost или IP сервера?
+        // Но для совместимости вернём локальный адрес сокета
+        return socket.getLocalAddress();
     }
 }

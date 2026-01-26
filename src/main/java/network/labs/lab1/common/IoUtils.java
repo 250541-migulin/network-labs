@@ -41,12 +41,37 @@ public class IoUtils {
         return total;
     }
 
-    public static String formatTransferRate(long bytes, long millis) {
-        if (millis <= 0) return bytes + " байт за " + millis + " мс (—)";
-        double seconds = millis / 1000.0;
-        double kb = bytes / 1024.0;
-        double rate = kb / seconds;
-        return bytes + " байт за " + millis + " мс (" + String.format("%.2f", rate) + " KB/s)";
+    /**
+     * Форматирует скорость передачи данных.
+     *
+     * @param bytes      количество переданных байт
+     * @param elapsedMs  время в миллисекундах (может быть дробным, например 0.45)
+     * @return строка с описанием скорости, например "2.50 MB/s" или "очень быстро"
+     */
+    public static String formatTransferRate(long bytes, double elapsedMs) {
+        // Защита от деления на ноль
+        if (elapsedMs <= 0.0) {
+            return "очень быстро";
+        }
+
+        double bytesPerSec = bytes / (elapsedMs / 1000.0);
+
+        // Максимальная реалистичная скорость: 1 ГБ/с
+        final double MAX_REALISTIC_BPS = 1_073_741_824.0; // 1 GiB/s
+
+        if (bytesPerSec > MAX_REALISTIC_BPS) {
+            return "очень быстро";
+        }
+
+        if (bytesPerSec < 1024) {
+            return String.format("%.2f B/s", bytesPerSec);
+        } else if (bytesPerSec < 1024 * 1024) {
+            return String.format("%.2f KB/s", bytesPerSec / 1024);
+        } else if (bytesPerSec < 1024 * 1024 * 1024) {
+            return String.format("%.2f MB/s", bytesPerSec / (1024 * 1024));
+        } else {
+            return String.format("%.2f GB/s", bytesPerSec / (1024 * 1024 * 1024));
+        }
     }
 
     public static void skipStream(InputStream in, long bytes) throws IOException {
@@ -60,4 +85,6 @@ public class IoUtils {
             skipped += s;
         }
     }
+
+
 }

@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -29,29 +30,56 @@ public class TcpServer {
         this.port = port;
         this.serverDir = PathsConfig.SERVER_TCP;
         FileUtils.ensureDirectory(serverDir);
+
+        // Очищаем директорию при старте сервера
+        try {
+            Files.list(serverDir).forEach(path -> {
+                try {
+                    Files.delete(path);
+                    log.info("Удалён старый файл после перезапуска: {}", path.getFileName());
+                } catch (IOException e) {
+                    log.warn("Не удалось удалить файл: {}", path, e);
+                }
+            });
+        } catch (IOException e) {
+            log.error("Ошибка очистки директории", e);
+        }
     }
 
     public void start() {
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
+        ServerSocket serverSocket = null;
+        try {
+            // Создаём с минимальной очередью
+            serverSocket = new ServerSocket(port, 1);
             log.info("TCP-сервер запущен на порту {}", port);
+
             while (true) {
                 Socket client = serverSocket.accept();
                 InetAddress clientIp = client.getInetAddress();
+                log.info("Подключился клиент: {} (IP: {})", client.getRemoteSocketAddress(), clientIp);
 
-                // Сбрасываем состояние, если клиент другой
-                if (lastClientIp == null || !lastClientIp.equals(clientIp)) {
-                    lastClientIp = null;
-                    lastFilename = null;
+                // Закрываем серверный сокет — новые подключения будут отклонены (по заданию последовательный сервер)
+                serverSocket.close();
+
+                try {
+                    client.setKeepAlive(true);
+                    client.setSoTimeout(120_000);
+                    handleClient(client, clientIp);
+                    log.info("Клиент отключился");
+                } finally {
+                    // Гарантируем, что клиент закрыт
+                    try { client.close(); } catch (IOException ignored) {}
                 }
 
-                log.info("Подключился клиент: {} (IP: {})", client.getRemoteSocketAddress(), clientIp);
-                client.setKeepAlive(true);
-                client.setSoTimeout(120_000);
-                handleClient(client, clientIp);
-                log.info("Клиент отключился");
+                // 🔁 Снова открываем серверный сокет для следующего клиента
+                serverSocket = new ServerSocket(port, 1);
             }
         } catch (IOException e) {
             log.error("Сервер остановлен", e);
+        } finally {
+            if (serverSocket != null) {
+                try { serverSocket.close(); } catch (IOException ignored) {}
+            }
         }
     }
 
@@ -106,7 +134,7 @@ public class TcpServer {
     private CommandRegistry<FileAwareContext> createFileRegistry() {
         CommandRegistry<FileAwareContext> reg = new CommandRegistry<>();
         reg.register(new UploadCommand(serverDir, this));
-        reg.register(new DownloadCommand(serverDir));
+        reg.register(new DownloadCommand(serverDir, this));
         return reg;
     }
 }

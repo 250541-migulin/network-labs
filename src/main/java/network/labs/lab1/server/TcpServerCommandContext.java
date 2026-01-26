@@ -48,6 +48,12 @@ public class TcpServerCommandContext implements FileAwareContext {
         return out;
     }
 
+    @Override
+    public Socket getSocket() {
+        return socket;
+    }
+
+    @Override
     public InetAddress getClientIp() {
         return clientIp;
     }
