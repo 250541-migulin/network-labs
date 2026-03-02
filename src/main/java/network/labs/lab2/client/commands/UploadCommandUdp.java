@@ -1,6 +1,7 @@
 package network.labs.lab2.client.commands;
 
 import network.labs.lab1.common.IoUtils;
+import network.labs.lab2.core.LimitInputStream;
 import network.labs.lab2.core.UdpCommand;
 import network.labs.lab2.transport.ReliableUdpSender;
 import network.labs.lab2.util.PathsConfig;
@@ -8,6 +9,7 @@ import network.labs.lab2.util.UdpIo;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -34,38 +36,54 @@ public class UploadCommandUdp implements UdpCommand {
             return;
         }
 
-        long size = Files.size(file);
+        long fileSize = Files.size(file);
 
-        // ✅ ФАЗА 1: отправляем команду
+        // === Фаза 1: отправка имени ===
         UdpIo.sendLine(socket, server, "UPLOAD " + filename);
 
-        // ✅ ФАЗА 2: ждём подтверждение
+        // === Фаза 2: получение offset ===
         String ok = UdpIo.receiveLine(socket);
-        if (!"CTRL:OK".equals(ok)) {
+        if (!ok.startsWith("OK ")) {
             System.out.println("Сервер: " + ok);
             return;
         }
 
-        // ✅ ФАЗА 3: отправляем размер
-        UdpIo.sendLine(socket, server, String.valueOf(size));
+        long offset;
+        try {
+            offset = Long.parseLong(ok.substring("OK ".length()).trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Сервер: некорректный offset");
+            return;
+        }
+
+        long remaining = fileSize - offset;
+        if (remaining <= 0) {
+            System.out.println("Файл уже загружен на сервере.");
+            return;
+        }
+
+        // === Фаза 3: отправка размера остатка ===
+        UdpIo.sendLine(socket, server, String.valueOf(remaining));
         String ready = UdpIo.receiveLine(socket);
-        if (!"CTRL:READY".equals(ready)) {
+        if (!"READY".equals(ready)) {
             System.out.println("Сервер: " + ready);
             return;
         }
 
-        // ✅ ФАЗА 4: передаём файл
-        System.out.println("Загрузка файла '" + filename + "'...");
+        // === Фаза 4: передача ===
+        System.out.println("Загрузка файла '" + filename + "' с offset=" + offset + "...");
         long start = System.currentTimeMillis();
         try (FileInputStream fis = new FileInputStream(file.toFile())) {
-            new ReliableUdpSender(socket, server).sendStream(fis, size);
+            fis.skipNBytes(offset);
+            try (InputStream limited = new LimitInputStream(fis, remaining)) {
+                new ReliableUdpSender(socket, server).sendStream(limited, remaining);
+            }
         }
         long elapsed = System.currentTimeMillis() - start;
-        System.out.println("✅ Отправлено: " + IoUtils.formatTransferRate(size, elapsed));
+        System.out.println("Отправлено: " + IoUtils.formatTransferRate(remaining, elapsed));
 
-        // ✅ ФАЗА 5: ждём финальное сообщение
+        // === Фаза 5: финал ===
         String finalMsg = UdpIo.receiveLine(socket);
         System.out.println("Сервер: " + finalMsg);
     }
-
 }

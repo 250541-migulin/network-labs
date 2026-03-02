@@ -79,7 +79,7 @@ public class DownloadCommand implements Command<FileAwareContext> {
 
         String finalMsg = ctx.readLine();
         System.out.println("Сервер: " + finalMsg);
-        System.out.println("✅ Файл успешно сохранён: " + target.getFileName());
+        System.out.println("Файл успешно сохранён: " + target.getFileName());
         return CommandResult.CONTINUE;
     }
 }

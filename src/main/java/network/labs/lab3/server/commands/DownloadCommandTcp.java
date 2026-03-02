@@ -31,7 +31,7 @@ public class DownloadCommandTcp implements Command<TcpNioContext> {
             return;
         }
 
-        ctx.writeLine(Protocol.CTRL_READY);
+        ctx.writeLine(Protocol.READY);
 
         try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
             byte[] buf = new byte[ctx.chunkSize()];
@@ -41,6 +41,6 @@ public class DownloadCommandTcp implements Command<TcpNioContext> {
             }
         }
 
-        ctx.writeLine(Protocol.CTRL_DONE);
+        ctx.writeLine(Protocol.DONE);
     }
 }

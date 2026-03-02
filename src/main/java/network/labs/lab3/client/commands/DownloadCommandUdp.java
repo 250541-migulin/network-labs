@@ -17,7 +17,7 @@ public class DownloadCommandUdp implements UdpClientCommand {
     @Override
     public void execute(String[] args, UdpClientContext ctx) throws IOException {
         if (args.length < 2) {
-            System.out.println("❌ нужно указать файл: DOWNLOAD <filename>");
+            System.out.println("нужно указать файл: DOWNLOAD <filename>");
             return;
         }
         String filename = args[1];
@@ -29,8 +29,8 @@ public class DownloadCommandUdp implements UdpClientCommand {
         String resp = ctx.readLine();
         System.out.println("⬅️ сервер: " + resp);
 
-        if (resp == null || !resp.equals(Protocol.CTRL_READY)) {
-            System.out.println("❌ сервер не готов к передаче файла (UDP)");
+        if (resp == null || !resp.equals(Protocol.READY)) {
+            System.out.println("сервер не готов к передаче файла (UDP)");
             return;
         }
 
@@ -39,11 +39,11 @@ public class DownloadCommandUdp implements UdpClientCommand {
             while (true) {
                 byte[] data = ctx.readChunk();
                 if (data == null) {
-                    System.out.println("⚠️ соединение закрыто сервером");
+                    System.out.println("соединение закрыто сервером");
                     break;
                 }
                 String marker = new String(data).trim();
-                if (marker.equals(Protocol.CTRL_DONE)) {
+                if (marker.equals(Protocol.DONE)) {
                     System.out.println("📥 получен маркер завершения передачи");
                     break;
                 }
@@ -53,6 +53,6 @@ public class DownloadCommandUdp implements UdpClientCommand {
             }
         }
 
-        System.out.println("✅ файл получен (UDP): " + filePath.toAbsolutePath());
+        System.out.println("файл получен (UDP): " + filePath.toAbsolutePath());
     }
 }

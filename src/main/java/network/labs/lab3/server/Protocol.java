@@ -17,10 +17,10 @@ public final class Protocol {
 
 
     // Служебные ответы
-    public static final String CTRL_READY   = "CTRL:READY"; // сервер готов к передаче/приёму
-    public static final String CTRL_END     = "CTRL:END";   // конец передачи (UDP)
-    public static final String CTRL_DONE    = "CTRL:DONE";  // конец передачи (TCP)
-    public static final String CTRL_ERROR   = "CTRL:ERROR"; // ошибка выполнения команды
+    public static final String READY   = "READY"; // сервер готов к передаче/приёму
+    public static final String END     = "END";   // конец передачи (UDP)
+    public static final String DONE    = "DONE";  // конец передачи (TCP)
+    public static final String ERROR   = "ERROR"; // ошибка выполнения команды
 
     // Разделитель строк
     public static final String CRLF = "\r\n";

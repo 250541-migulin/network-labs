@@ -14,6 +14,7 @@ public class CloseCommandUdp implements UdpCommand {
     public void execute(String[] args, DatagramSocket socket, InetSocketAddress server) throws IOException {
         UdpIo.sendLine(socket, server, "CLOSE");
         System.out.println("Сервер: " + UdpIo.receiveLine(socket));
-        // при желании клиент может завершить работу после этого
+        // Завершаем работу клиента
+        System.exit(0);
     }
 }

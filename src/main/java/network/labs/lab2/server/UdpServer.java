@@ -15,6 +15,9 @@ public class UdpServer {
     private final int port;
     private final Path serverDir;
 
+    private InetSocketAddress lastClient = null;
+    private String lastFilename = null;
+
     public UdpServer(int port) {
         this.port = port;
         this.serverDir = PathsConfig.SERVER_UDP;
@@ -24,15 +27,18 @@ public class UdpServer {
         try (DatagramSocket socket = new DatagramSocket(port)) {
             log.info("📡 UDP-сервер запущен на порту {}", port);
 
-            UdpCommandRegistry registry = ServerCommandsFactory.create(serverDir);
+            UdpCommandRegistry registry = ServerCommandsFactory.create(this);
 
             while (true) {
                 try {
+                    // Сбрасываем таймаут перед приёмом новой команды
+                    socket.setSoTimeout(0); // бесконечное ожидание
+
                     byte[] buf = new byte[1500];
                     DatagramPacket packet = new DatagramPacket(buf, buf.length);
                     socket.receive(packet);
 
-                    String line = UdpIo.receiveString(packet); // ← работает
+                    String line = UdpIo.receiveString(packet);
                     InetSocketAddress peer = new InetSocketAddress(
                             packet.getAddress(), packet.getPort()
                     );
@@ -40,6 +46,9 @@ public class UdpServer {
 
                     registry.dispatch(line, socket, peer);
 
+                } catch (java.net.SocketTimeoutException e) {
+                    // Игнорируем — не должно происходить при SoTimeout=0
+                    log.debug("Таймаут приёма (игнорируем)");
                 } catch (Exception e) {
                     log.error("Ошибка обработки", e);
                 }
@@ -47,5 +56,19 @@ public class UdpServer {
         } catch (IOException e) {
             log.error("Сервер остановлен", e);
         }
+    }
+
+    public boolean isSameClientAndFile(InetSocketAddress client, String filename) {
+        return lastClient != null && lastClient.equals(client)
+                && lastFilename != null && lastFilename.equals(filename);
+    }
+
+    public void setLastSession(InetSocketAddress client, String filename) {
+        this.lastClient = client;
+        this.lastFilename = filename;
+    }
+
+    public Path getServerDir() {
+        return serverDir;
     }
 }

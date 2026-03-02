@@ -1,11 +1,11 @@
 package network.labs.lab2.transport;
 
-import network.labs.lab2.util.UdpIo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 
@@ -21,25 +21,50 @@ public class ReliableUdpReceiver {
         this.out = out;
     }
 
-    public void receiveStream() throws IOException {
-        long received = 0;
-        long start = System.currentTimeMillis();
+    public void receiveStream(long expectedSize) throws IOException {
+        int originalTimeout = socket.getSoTimeout();
+        try {
+            socket.setSoTimeout(5000); // 5 секунд на ожидание пакета
 
-        while (true) {
-            String line = UdpIo.receiveLine(socket);
+            int expectedSeq = 0;
+            long receivedBytes = 0;
+            int lastPercent = -1;
 
-            // Явный маркер конца передачи
-            if ("CTRL:END".equals(line)) {
-                log.debug("Получен CTRL:END — конец передачи");
-                break;
+            while (receivedBytes < expectedSize) {
+                byte[] buf = new byte[1500];
+                DatagramPacket packet = new DatagramPacket(buf, buf.length);
+                socket.receive(packet);
+
+                if (!packet.getAddress().equals(peer.getAddress()) ||
+                        packet.getPort() != peer.getPort()) {
+                    continue;
+                }
+
+                DataPacket dataPkt = DataPacket.fromBytes(packet.getData());
+                log.debug("Получен пакет seq={}", dataPkt.seqNum);
+
+                // Отправляем ACK
+                AckPacket ack = new AckPacket(dataPkt.seqNum);
+                byte[] ackRaw = ack.toBytes();
+                DatagramPacket ackPkt = new DatagramPacket(ackRaw, ackRaw.length, peer);
+                socket.send(ackPkt);
+
+                if (dataPkt.seqNum == expectedSeq) {
+                    out.write(dataPkt.data);
+                    receivedBytes += dataPkt.data.length;
+                    expectedSeq++;
+
+                    // Прогресс-бар (относительно оставшегося объёма)
+                    int percent = (int) (receivedBytes * 100 / expectedSize);
+                    if (percent != lastPercent && percent % 10 == 0) {
+                        System.out.println("Докачка: " + percent + "% (" + receivedBytes + " из " + expectedSize + " байт)");
+                        lastPercent = percent;
+                    }
+                }
             }
-
-            byte[] data = line.getBytes();
-            out.write(data);
-            received += data.length;
+            log.info("Приём завершён: {} байт", receivedBytes);
+        } finally {
+            socket.setSoTimeout(originalTimeout);
         }
-
-        long elapsed = System.currentTimeMillis() - start;
-        log.info("Приём завершён: {} байт за {} мс", received, elapsed);
     }
 }

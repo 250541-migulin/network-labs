@@ -4,6 +4,7 @@ import network.labs.lab1.common.IoUtils;
 import network.labs.lab2.core.UdpCommand;
 import network.labs.lab2.transport.ReliableUdpReceiver;
 import network.labs.lab2.util.UdpIo;
+import network.labs.lab2.server.UdpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,11 +17,12 @@ import java.nio.file.Path;
 
 public class UploadCommandUdp implements UdpCommand {
     private final Path serverDir;
-
+    private final UdpServer server; // ← новый параметр
     private final Logger log = LoggerFactory.getLogger(UploadCommandUdp.class);
 
-    public UploadCommandUdp(Path serverDir) {
+    public UploadCommandUdp(Path serverDir, UdpServer server) {
         this.serverDir = serverDir;
+        this.server = server;
     }
 
     @Override
@@ -31,7 +33,7 @@ public class UploadCommandUdp implements UdpCommand {
     @Override
     public void execute(String[] args, DatagramSocket socket, InetSocketAddress peer) throws IOException {
         if (args.length < 1) {
-            UdpIo.sendLine(socket, peer, "CTRL:ERROR имя файла не указано");
+            UdpIo.sendLine(socket, peer, "ERROR имя файла не указано");
             return;
         }
 
@@ -41,38 +43,63 @@ public class UploadCommandUdp implements UdpCommand {
 
         log.info("UPLOAD: запрос на загрузку файла '{}'", filename);
 
-        // Фаза 1: подтверждаем команду
-        UdpIo.sendLine(socket, peer, "CTRL:OK");
-        log.debug("UPLOAD: отправлен CTRL:OK");
+        // === Проверка на докачку ===
+        long offset = 0;
+        boolean isNewFile = !Files.exists(target);
 
-        // Фаза 2: ждём размер
+        if (!isNewFile) {
+            if (server.isSameClientAndFile(peer, filename)) {
+                offset = Files.size(target);
+                log.info("Возобновляем загрузку '{}' (уже {} байт)", filename, offset);
+            } else {
+                Files.delete(target);
+                isNewFile = true;
+                log.info("Удалён файл '{}' (другой клиент)", filename);
+            }
+        }
+
+        // === Отправляем offset ===
+        UdpIo.sendLine(socket, peer, "OK " + offset);
+        log.debug("UPLOAD: отправлен OK {}", offset);
+
+        // === Ждём размер остатка ===
         String sizeLine = UdpIo.receiveLine(socket);
-        log.debug("UPLOAD: получена строка размера '{}'", sizeLine);
-
-        long size;
+        long remaining;
         try {
-            size = Long.parseLong(sizeLine.trim());
+            remaining = Long.parseLong(sizeLine.trim());
         } catch (NumberFormatException e) {
-            UdpIo.sendLine(socket, peer, "CTRL:ERROR неверный размер");
+            UdpIo.sendLine(socket, peer, "ERROR неверный размер");
             log.error("UPLOAD: неверный формат размера '{}'", sizeLine);
             return;
         }
 
-        UdpIo.sendLine(socket, peer, "CTRL:READY");
-        log.debug("UPLOAD: отправлен CTRL:READY, ожидаем {} байт", size);
-
-        // Фаза 3: приём файла
-        long start = System.currentTimeMillis();
-        try (FileOutputStream fos = new FileOutputStream(target.toFile())) {
-            new ReliableUdpReceiver(socket, peer, fos).receiveStream();
+        if (remaining < 0) {
+            UdpIo.sendLine(socket, peer, "ERROR отрицательный размер");
+            return;
         }
+
+        UdpIo.sendLine(socket, peer, "READY");
+        log.debug("UPLOAD: ожидаем {} байт", remaining);
+
+        // === Приём данных ===
+        long start = System.currentTimeMillis();
+        try (FileOutputStream fos = new FileOutputStream(target.toFile(), true)) { // append = true
+            new ReliableUdpReceiver(socket, peer, fos).receiveStream(remaining); // ← передаём размер!
+        } catch (IOException e) {
+            // Сохраняем сессию для восстановления
+            log.warn("UPLOAD прерван: {}", e.getMessage());
+            server.setLastSession(peer, filename);
+            return;
+        }
+
         long elapsed = System.currentTimeMillis() - start;
         log.info("UPLOAD: файл '{}' принят за {} мс", filename, elapsed);
 
-        // Фаза 4: финал
-        String rate = IoUtils.formatTransferRate(size, elapsed);
-        UdpIo.sendLine(socket, peer, "CTRL:DONE Файл '" + filename + "' загружен: " + rate);
-        log.info("UPLOAD: завершено, отправлен CTRL:DONE");
-    }
+        // Успешно — сбрасываем сессию
+        server.setLastSession(null, null);
 
+        String rate = IoUtils.formatTransferRate(Files.size(target), elapsed);
+        UdpIo.sendLine(socket, peer, "DONE Файл '" + filename + "' загружен: " + rate);
+        log.info("UPLOAD: завершено");
+    }
 }

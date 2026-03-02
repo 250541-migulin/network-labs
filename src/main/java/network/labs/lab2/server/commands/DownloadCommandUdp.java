@@ -1,14 +1,17 @@
 package network.labs.lab2.server.commands;
 
 import network.labs.lab1.common.IoUtils;
+import network.labs.lab2.core.LimitInputStream;
 import network.labs.lab2.core.UdpCommand;
 import network.labs.lab2.transport.ReliableUdpSender;
 import network.labs.lab2.util.UdpIo;
+import network.labs.lab2.server.UdpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -16,11 +19,12 @@ import java.nio.file.Path;
 
 public class DownloadCommandUdp implements UdpCommand {
     private final Path serverDir;
-
+    private final UdpServer server;
     private final Logger log = LoggerFactory.getLogger(DownloadCommandUdp.class);
 
-    public DownloadCommandUdp(Path serverDir) {
+    public DownloadCommandUdp(Path serverDir, UdpServer server) {
         this.serverDir = serverDir;
+        this.server = server;
     }
 
     @Override
@@ -29,39 +33,57 @@ public class DownloadCommandUdp implements UdpCommand {
     @Override
     public void execute(String[] args, DatagramSocket socket, InetSocketAddress peer) throws IOException {
         if (args.length < 1) {
-            UdpIo.sendLine(socket, peer, "CTRL:ERROR имя файла не указано");
+            UdpIo.sendLine(socket, peer, "ERROR имя файла не указано");
             return;
         }
 
         String filename = args[0];
-        Path source = serverDir.resolve(filename);
+        long requestedOffset = 0;
+        if (args.length >= 2) {
+            try {
+                requestedOffset = Long.parseLong(args[1]);
+            } catch (NumberFormatException e) {
+                UdpIo.sendLine(socket, peer, "ERROR некорректный offset");
+                return;
+            }
+        }
 
+        Path source = serverDir.resolve(filename);
         if (!Files.exists(source)) {
-            UdpIo.sendLine(socket, peer, "CTRL:ERROR файл не найден — " + filename);
+            UdpIo.sendLine(socket, peer, "ERROR файл не найден — " + filename);
             log.warn("DOWNLOAD: файл '{}' не найден", filename);
             return;
         }
 
-        long size = Files.size(source);
-        log.info("DOWNLOAD: запрос на скачивание '{}', размер {} байт", filename, size);
+        long fileSize = Files.size(source);
+        long actualOffset = Math.min(requestedOffset, fileSize);
+        long remaining = fileSize - actualOffset;
 
-        // Фаза 1: контрольные сообщения
-        UdpIo.sendLine(socket, peer, "CTRL:OK " + size);
-        UdpIo.sendLine(socket, peer, "CTRL:READY");
-        log.debug("DOWNLOAD: отправлены CTRL:OK и CTRL:READY");
+        log.info("DOWNLOAD: {} запрашивает '{}' с offset={} (осталось {} байт)", peer, filename, actualOffset, remaining);
 
-        // Фаза 2: отправка файла
+        UdpIo.sendLine(socket, peer, "OK " + fileSize);
+        UdpIo.sendLine(socket, peer, "READY");
+
+        if (remaining == 0) {
+            UdpIo.sendLine(socket, peer, "DONE Файл '" + filename + "' уже полный");
+            return;
+        }
+
         long start = System.currentTimeMillis();
         try (FileInputStream fis = new FileInputStream(source.toFile())) {
-            new ReliableUdpSender(socket, peer).sendStream(fis, size);
+            fis.skipNBytes(actualOffset);
+            try (InputStream limited = new LimitInputStream(fis, remaining)) {
+                new ReliableUdpSender(socket, peer).sendStream(limited, remaining);
+            }
+        } catch (IOException e) {
+            log.warn("DOWNLOAD прерван: {}", e.getMessage());
+            server.setLastSession(peer, filename);
+            return;
         }
+
         long elapsed = System.currentTimeMillis() - start;
-        log.info("DOWNLOAD: файл '{}' отправлен за {} мс", filename, elapsed);
-
-        // Фаза 3: завершение
-        String rate = IoUtils.formatTransferRate(size, elapsed);
-        UdpIo.sendLine(socket, peer, "CTRL:DONE Файл '" + filename + "' отправлен: " + rate);
-        log.info("DOWNLOAD: завершено, отправлен CTRL:DONE");
+        String rate = IoUtils.formatTransferRate(remaining, elapsed);
+        UdpIo.sendLine(socket, peer, "DONE Файл '" + filename + "' отправлен: " + rate);
+        log.info("DOWNLOAD: завершено");
     }
-
 }

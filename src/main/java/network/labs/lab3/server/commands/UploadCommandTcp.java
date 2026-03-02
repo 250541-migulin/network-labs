@@ -30,7 +30,7 @@ public class UploadCommandTcp implements Command<TcpNioContext> {
         Path filePath = serverDir.resolve(filename);
 
         FileUtils.ensureDirectory(serverDir);
-        ctx.writeLine(Protocol.CTRL_READY);
+        ctx.writeLine(Protocol.READY);
 
         long totalBytes = 0;
         int chunkIndex = 0;
@@ -42,7 +42,7 @@ public class UploadCommandTcp implements Command<TcpNioContext> {
                     log.warn("Соединение закрыто клиентом во время загрузки '{}'", filename);
                     break;
                 }
-                if (chunk.equals(Protocol.CTRL_DONE)) {
+                if (chunk.equals(Protocol.DONE)) {
                     log.info("Файл '{}' успешно получен: {} байт", filename, totalBytes);
                     break;
                 }

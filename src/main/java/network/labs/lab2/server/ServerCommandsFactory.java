@@ -7,7 +7,7 @@ import java.nio.file.Path;
 public final class ServerCommandsFactory {
     private ServerCommandsFactory() {}
 
-    public static UdpCommandRegistry create(Path serverDir) {
+    public static UdpCommandRegistry create(UdpServer server) {
         UnknownCommandUdp unknown = new UnknownCommandUdp();
         UdpCommandRegistry reg = new UdpCommandRegistry(unknown);
 
@@ -15,8 +15,9 @@ public final class ServerCommandsFactory {
         reg.register(new TimeCommandUdp());
         reg.register(new CloseCommandUdp());
 
-        reg.register(new UploadCommandUdp(serverDir));
-        reg.register(new DownloadCommandUdp(serverDir));
+        Path serverDir = server.getServerDir();
+        reg.register(new UploadCommandUdp(serverDir, server));
+        reg.register(new DownloadCommandUdp(serverDir, server));
 
         return reg;
     }

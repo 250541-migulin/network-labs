@@ -11,7 +11,7 @@ public class EchoCommandUdp implements UdpCommand {
     @Override public String name() { return "ECHO"; }
     @Override public void execute(String[] args, DatagramSocket socket, InetSocketAddress peer) throws IOException {
         if (args.length == 0) {
-            UdpIo.sendLine(socket, peer, "CTRL:ERROR Использование: ECHO <сообщение>");
+            UdpIo.sendLine(socket, peer, "ERROR Использование: ECHO <сообщение>");
             return;
         }
         String msg = String.join(" ", args);

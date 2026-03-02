@@ -34,7 +34,7 @@ public class UploadCommandClient implements ClientCommand {
         String resp = ctx.readLine();
         System.out.println("⬅️ сервер: " + resp);
 
-        if (resp == null || !resp.equals(Protocol.CTRL_READY)) {
+        if (resp == null || !resp.equals(Protocol.READY)) {
             System.out.println("❌ сервер не готов к приёму файла");
             return;
         }
@@ -47,7 +47,7 @@ public class UploadCommandClient implements ClientCommand {
             }
         }
 
-        ctx.sendLine(Protocol.CTRL_DONE);
+        ctx.sendLine(Protocol.DONE);
         String finalMsg = ctx.readLine();
         System.out.println("⬅️ сервер: " + finalMsg);
         System.out.println("✅ файл отправлен: " + filePath.toAbsolutePath());

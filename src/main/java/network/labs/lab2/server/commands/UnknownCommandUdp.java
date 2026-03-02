@@ -10,6 +10,6 @@ import java.net.InetSocketAddress;
 public class UnknownCommandUdp implements UdpCommand {
     @Override public String name() { return "UNKNOWN"; }
     @Override public void execute(String[] args, DatagramSocket socket, InetSocketAddress peer) throws IOException {
-        UdpIo.sendLine(socket, peer, "CTRL:ERROR неизвестная команда");
+        UdpIo.sendLine(socket, peer, "ERROR неизвестная команда");
     }
 }

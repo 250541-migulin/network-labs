@@ -35,7 +35,7 @@ public class UploadCommandUdp implements UdpClientCommand {
         String resp = ctx.readLine();
         System.out.println("⬅️ сервер: " + resp);
 
-        if (resp == null || !resp.equals(Protocol.CTRL_READY)) {
+        if (resp == null || !resp.equals(Protocol.READY)) {
             System.out.println("❌ сервер не готов к приёму файла (UDP)");
             return;
         }
@@ -51,7 +51,7 @@ public class UploadCommandUdp implements UdpClientCommand {
             }
         }
 
-        ctx.sendLine(Protocol.CTRL_DONE);
+        ctx.sendLine(Protocol.DONE);
         String finalMsg = ctx.readLine();
         System.out.println("⬅️ сервер: " + finalMsg);
         System.out.println("✅ файл отправлен (UDP): " + filePath.toAbsolutePath());

@@ -34,7 +34,7 @@ public class DownloadCommandUdp implements Command<UdpNioContext> {
             return;
         }
 
-        ctx.sendLine(Protocol.CTRL_READY);
+        ctx.sendLine(Protocol.READY);
 
         long totalBytes = 0;
         int chunkIndex = 0;
@@ -51,6 +51,6 @@ public class DownloadCommandUdp implements Command<UdpNioContext> {
         }
 
         log.info("UDP: файл '{}' отправлен: {} байт", filename, totalBytes);
-        ctx.sendLine(Protocol.CTRL_DONE);
+        ctx.sendLine(Protocol.DONE);
     }
 }

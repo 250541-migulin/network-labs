@@ -30,7 +30,7 @@ public class UploadCommandUdp implements Command<UdpNioContext> {
         Path filePath = serverDir.resolve(filename);
 
         FileUtils.ensureDirectory(serverDir);
-        ctx.sendLine(Protocol.CTRL_READY);
+        ctx.sendLine(Protocol.READY);
 
         long totalBytes = 0;
         int chunkIndex = 0;
@@ -42,7 +42,7 @@ public class UploadCommandUdp implements Command<UdpNioContext> {
                     log.warn("UDP: клиент закрыл соединение во время загрузки '{}'", filename);
                     break;
                 }
-                if (line.equals(Protocol.CTRL_DONE)) {
+                if (line.equals(Protocol.DONE)) {
                     log.info("UDP: файл '{}' успешно получен: {} байт", filename, totalBytes);
                     break;
                 }

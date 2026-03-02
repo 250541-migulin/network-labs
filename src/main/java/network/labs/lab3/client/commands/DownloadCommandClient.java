@@ -28,7 +28,7 @@ public class DownloadCommandClient implements ClientCommand {
         String resp = ctx.readLine();
         System.out.println("⬅️ сервер: " + resp);
 
-        if (resp == null || !resp.equals(Protocol.CTRL_READY)) {
+        if (resp == null || !resp.equals(Protocol.READY)) {
             System.out.println("❌ сервер не готов к передаче файла");
             return;
         }
@@ -36,7 +36,7 @@ public class DownloadCommandClient implements ClientCommand {
         try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
             String chunk;
             while ((chunk = ctx.readLine()) != null) {
-                if (chunk.equals(Protocol.CTRL_DONE)) break;
+                if (chunk.equals(Protocol.DONE)) break;
                 fos.write(chunk.getBytes());
             }
         }
