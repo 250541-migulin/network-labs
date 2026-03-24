@@ -54,8 +54,6 @@ public class TcpClientCommandContext implements FileAwareContext {
 
     @Override
     public InetAddress getClientIp() {
-        // На клиенте "client IP" — это localhost или IP сервера?
-        // Но для совместимости вернём локальный адрес сокета
         return socket.getLocalAddress();
     }
 }

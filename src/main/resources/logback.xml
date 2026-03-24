@@ -1,35 +1,20 @@
-<!-- src/main/resources/logback.xml -->
-<configuration scan="true" scanPeriod="30 seconds">
-    <!-- Цветной консольный вывод -->
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Вывод в консоль -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%-20logger{0}] %msg%n</pattern>
+            <!-- Формат: время [уровень] класс - сообщение -->
+            <pattern>%d{HH:mm:ss} [%highlight(%-5level)] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Файловый лог (ротация по размеру) -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/app.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>10MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>3GB</totalSizeCap>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
-    <!-- Уровни -->
+    <!-- Уровень логирования для всего приложения -->
     <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE" />
+        <appender-ref ref="CONSOLE"/>
     </root>
 
-    <!-- Для debug-режима: -->
-    <logger name="network.labs.lab1" level="DEBUG" />
-    <logger name="network.labs.lab1.server" level="TRACE" />
-
+    <!-- Отладка только для твоих классов (опционально) -->
+    <logger name="network.labs.lab1" level="DEBUG"/>
 
 </configuration>
