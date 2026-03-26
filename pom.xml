@@ -12,6 +12,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     </properties>
 
     <dependencies>
@@ -29,7 +30,20 @@
 
     <build>
         <plugins>
-            <!-- Сборка JAR с зависимостями -->
+            <!-- === Компиляция: исключаем другие лабы === -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/lab2/**</exclude>
+                        <exclude>**/lab3/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- === Сборка JAR с зависимостями (только ЛР-01) === -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.6.0</version>
@@ -71,48 +85,10 @@
                             </archive>
                         </configuration>
                     </execution>
-
-                    <!-- ЛР №2: сервер -->
-                    <execution>
-                        <id>lab2-server</id>
-                        <phase>package</phase>
-                        <goals><goal>single</goal></goals>
-                        <configuration>
-                            <finalName>lab2-server</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <archive>
-                                <manifest>
-                                    <mainClass>network.labs.lab2.server.MainServerUdp</mainClass>
-                                </manifest>
-                            </archive>
-                        </configuration>
-                    </execution>
-
-                    <!-- ЛР №2: клиент -->
-                    <execution>
-                        <id>lab2-client</id>
-                        <phase>package</phase>
-                        <goals><goal>single</goal></goals>
-                        <configuration>
-                            <finalName>lab2-client</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <archive>
-                                <manifest>
-                                    <mainClass>network.labs.lab2.client.MainClientUdp</mainClass>
-                                </manifest>
-                            </archive>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
 
-            <!-- Копирование на TFTP -->
+            <!-- === Копирование на TFTP (только ЛР-01) === -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -123,7 +99,7 @@
                         <goals><goal>run</goal></goals>
                         <configuration>
                             <target>
-                                <echo message="Copying JAR files to TFTP server 172.20.200.40..." />
+                                <echo message="Копирование JAR ЛР-01 на сервер 172.20.200.40..." />
 
                                 <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
                                     <arg value="-i"/>
@@ -137,20 +113,8 @@
                                     <arg value="${project.build.directory}/lab1-client.jar"/>
                                     <arg value="danik@172.20.200.40:/srv/tftp/"/>
                                 </exec>
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab2-server.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab2-client.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
 
-                                <echo message="JAR files copied successfully!" />
+                                <echo message="JAR файлы ЛР-01 скопированы!" />
                             </target>
                         </configuration>
                     </execution>

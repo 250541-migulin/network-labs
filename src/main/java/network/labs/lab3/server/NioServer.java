@@ -1,6 +1,5 @@
 package network.labs.lab3.server;
 
-import network.labs.lab1.common.FileUtils;
 import network.labs.lab2.util.PathsConfig;
 
 import java.io.IOException;

@@ -1,7 +1,6 @@
 package network.labs.lab3.client.commands;
 
 import network.labs.lab2.util.PathsConfig;
-import network.labs.lab1.common.FileUtils;
 import network.labs.lab3.client.*;
 import network.labs.lab3.server.Protocol;
 

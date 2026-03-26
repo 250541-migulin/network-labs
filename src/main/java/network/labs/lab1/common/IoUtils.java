@@ -1,12 +1,35 @@
 package network.labs.lab1.common;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+
+/**
+ * Утилиты для работы с потоками в кодировке UTF-8.
+ * Включает логирование всех сетевых операций и прогресс-бары для передачи файлов.
+ */
 public class IoUtils {
 
+    private static final Logger log = LoggerFactory.getLogger(IoUtils.class);
+
+    /**
+     * Читает строку до \r\n или \n в кодировке UTF-8.
+     * Логирует факт чтения для отладки протокола.
+     *
+     * @param in InputStream для чтения
+     * @return строку или null при конце потока
+     */
     public static String readLine(InputStream in) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        log.debug("<< READ from network");
+
+        var baos = new java.io.ByteArrayOutputStream();
         int b;
         while ((b = in.read()) != -1) {
             if (b == '\n') break;
@@ -16,75 +39,164 @@ public class IoUtils {
                 if (next != '\n') in.reset();
                 break;
             }
-            buf.write(b);
+            baos.write(b);
         }
-        byte[] bytes = buf.toByteArray();
-        return (bytes.length == 0 && b == -1) ? null : new String(bytes, StandardCharsets.UTF_8);
+        byte[] bytes = baos.toByteArray();
+        String result = bytes.length == 0 && b == -1 ? null : new String(bytes, StandardCharsets.UTF_8);
+
+        log.debug("<< READ: '{}'", result);
+        return result;
     }
 
+    /**
+     * Пишет строку с \r\n в кодировке UTF-8.
+     * Логирует факт записи для отладки протокола.
+     *
+     * @param out OutputStream для записи
+     * @param line строка для записи (без завершающей последовательности)
+     */
     public static void writeLine(OutputStream out, String line) throws IOException {
-        out.write(line.getBytes(StandardCharsets.UTF_8));
-        out.write('\r');
-        out.write('\n');
+        log.debug(">> WRITE to network: '{}'", line);
+
+        out.write((line + "\r\n").getBytes(StandardCharsets.UTF_8));
         out.flush();
+
+        log.debug(">> WRITE: flushed");
     }
 
-    public static long copyStream(InputStream in, OutputStream out, long length) throws IOException {
-        byte[] buffer = new byte[8192];
+    /**
+     * Копирует данные из сети в файл (для DOWNLOAD/UPLOAD приёма).
+     * Выводит прогресс-бар с процентами и скоростью передачи.
+     *
+     * @param in InputStream из сокета
+     * @param target Путь к файлу
+     * @param append true = дописать (докачка), false = создать заново
+     * @param maxBytes Максимальное количество байт для чтения
+     * @return Количество записанных байт
+     */
+    public static long copyStreamToFile(InputStream in, Path target, boolean append, long maxBytes) throws IOException {
+        log.debug(">> COPY: network -> file, maxBytes={}, append={}", maxBytes, append);
+
         long total = 0;
-        int read;
-        while (total < length && (read = in.read(buffer, 0, (int) Math.min(buffer.length, length - total))) != -1) {
-            out.write(buffer, 0, read);
-            total += read;
+        byte[] buf = new byte[8192];
+        long lastProgress = 0;
+        long startTime = System.currentTimeMillis();
+        long lastTime = startTime;
+        long lastBytes = 0;
+
+        try (var fos = Files.newOutputStream(target, StandardOpenOption.CREATE,
+                append ? StandardOpenOption.APPEND : StandardOpenOption.WRITE)) {
+
+            System.out.print("\r📥 Приём: 0%");
+
+            int read;
+            while (total < maxBytes && (read = in.read(buf, 0, (int) Math.min(buf.length, maxBytes - total))) != -1) {
+                fos.write(buf, 0, read);
+                total += read;
+
+                long currentTime = System.currentTimeMillis();
+                long progress = (total * 100) / maxBytes;
+
+                // Выводим прогресс каждые 10%
+                if (progress >= lastProgress + 10) {
+                    long timeDiff = currentTime - lastTime;
+                    long bytesDiff = total - lastBytes;
+                    long speed = timeDiff > 0 ? (bytesDiff * 1000) / timeDiff : 0;
+
+                    System.out.print("\r📥 Приём: " + progress + "% | " +
+                            formatBytes(total) + "/" + formatBytes(maxBytes) +
+                            " | " + formatBytes(speed) + "/с");
+
+                    lastProgress = progress;
+                    lastTime = currentTime;
+                    lastBytes = total;
+                }
+            }
         }
-        out.flush();
+
+        long totalTime = System.currentTimeMillis() - startTime;
+        long avgSpeed = totalTime > 0 ? (total * 1000) / totalTime : 0;
+
+        System.out.println("\r📥 Приём: 100% — завершено! (" +
+                formatBytes(total) + ", " + formatBytes(avgSpeed) + "/с)          ");
+
+        log.debug(">> COPY: completed, total={} bytes", total);
         return total;
     }
 
     /**
-     * Форматирует скорость передачи данных.
+     * Копирует данные из файла в сеть (для UPLOAD/DOWNLOAD отправки).
+     * Выводит прогресс-бар с процентами и скоростью передачи.
      *
-     * @param bytes      количество переданных байт
-     * @param elapsedMs  время в миллисекундах (может быть дробным, например 0.45)
-     * @return строка с описанием скорости, например "2.50 MB/s" или "очень быстро"
+     * @param source Путь к файлу
+     * @param out OutputStream в сокет
+     * @param skip Сколько байт пропустить (для докачки)
+     * @return Количество отправленных байт
      */
-    public static String formatTransferRate(long bytes, double elapsedMs) {
-        // Защита от деления на ноль
-        if (elapsedMs <= 0.0) {
-            return "очень быстро";
-        }
+    public static long copyFileToStream(Path source, OutputStream out, long skip) throws IOException {
+        log.debug(">> COPY: file -> network, skip={}", skip);
 
-        double bytesPerSec = bytes / (elapsedMs / 1000.0);
+        long total = 0;
+        byte[] buf = new byte[8192];
+        long lastProgress = 0;
+        long startTime = System.currentTimeMillis();
+        long lastTime = startTime;
+        long lastBytes = 0;
 
-        // Максимальная реалистичная скорость: 1 ГБ/с
-        final double MAX_REALISTIC_BPS = 1_073_741_824.0; // 1 GiB/s
+        try (var fis = Files.newInputStream(source)) {
+            fis.skipNBytes(skip);
 
-        if (bytesPerSec > MAX_REALISTIC_BPS) {
-            return "очень быстро";
-        }
+            long fileSize = Files.size(source);
+            long remainingSize = fileSize - skip;
 
-        if (bytesPerSec < 1024) {
-            return String.format("%.2f B/s", bytesPerSec);
-        } else if (bytesPerSec < 1024 * 1024) {
-            return String.format("%.2f KB/s", bytesPerSec / 1024);
-        } else if (bytesPerSec < 1024 * 1024 * 1024) {
-            return String.format("%.2f MB/s", bytesPerSec / (1024 * 1024));
-        } else {
-            return String.format("%.2f GB/s", bytesPerSec / (1024 * 1024 * 1024));
-        }
-    }
+            System.out.print("\r📤 Отправка: 0%");
 
-    public static void skipStream(InputStream in, long bytes) throws IOException {
-        long skipped = 0;
-        while (skipped < bytes) {
-            long s = in.skip(bytes - skipped);
-            if (s == 0) {
-                if (in.read() == -1) break;
-                s = 1;
+            int read;
+            while ((read = fis.read(buf)) != -1) {
+                out.write(buf, 0, read);
+                total += read;
+
+                long currentTime = System.currentTimeMillis();
+                long progress = (total * 100) / remainingSize;
+
+                // Выводим прогресс каждые 10%
+                if (progress >= lastProgress + 10) {
+                    long timeDiff = currentTime - lastTime;
+                    long bytesDiff = total - lastBytes;
+                    long speed = timeDiff > 0 ? (bytesDiff * 1000) / timeDiff : 0;
+
+                    System.out.print("\r📤 Отправка: " + progress + "% | " +
+                            formatBytes(total) + "/" + formatBytes(remainingSize) +
+                            " | " + formatBytes(speed) + "/с");
+
+                    lastProgress = progress;
+                    lastTime = currentTime;
+                    lastBytes = total;
+                }
             }
-            skipped += s;
+            out.flush();
         }
+
+        long totalTime = System.currentTimeMillis() - startTime;
+        long avgSpeed = totalTime > 0 ? (total * 1000) / totalTime : 0;
+
+        System.out.println("\r📤 Отправка: 100% — завершено! (" +
+                formatBytes(total) + ", " + formatBytes(avgSpeed) + "/с)          ");
+
+        log.debug(">> COPY: completed, total={} bytes", total);
+        return total;
     }
 
-
+    /**
+     * Форматирует размер в байтах в человекочитаемый вид (B, KB, MB, GB).
+     *
+     * @param bytes размер в байтах
+     * @return строка вида "10 MB", "512 KB" и т.д.
+     */
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024) + " KB";
+        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)) + " MB";
+        return (bytes / (1024 * 1024 * 1024)) + " GB";
+    }
 }
