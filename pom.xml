@@ -30,25 +30,28 @@
 
     <build>
         <plugins>
-            <!-- === Компиляция: исключаем другие лабы === -->
+            <!-- === Компиляция: исключаем только будущие лабы === -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/lab2/**</exclude>
+                        <!-- ЛР-02 теперь включена в сборку -->
                         <exclude>**/lab3/**</exclude>
+                        <exclude>**/lab4/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>
 
-            <!-- === Сборка JAR с зависимостями (только ЛР-01) === -->
+            <!-- === Сборка JAR с зависимостями (ЛР-01 и ЛР-02) === -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.6.0</version>
                 <executions>
-                    <!-- ЛР №1: сервер -->
+                    <!-- ================= ЛР-01: TCP ================= -->
+
+                    <!-- ЛР №1: сервер (TCP) -->
                     <execution>
                         <id>lab1-server</id>
                         <phase>package</phase>
@@ -67,7 +70,7 @@
                         </configuration>
                     </execution>
 
-                    <!-- ЛР №1: клиент -->
+                    <!-- ЛР №1: клиент (TCP) -->
                     <execution>
                         <id>lab1-client</id>
                         <phase>package</phase>
@@ -85,10 +88,50 @@
                             </archive>
                         </configuration>
                     </execution>
+
+                    <!-- ================= ЛР-02: UDP ================= -->
+
+                    <!-- ЛР №2: сервер (UDP) -->
+                    <execution>
+                        <id>lab2-server</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab2-server</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab2.server.MainServerUdp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+
+                    <!-- ЛР №2: клиент (UDP) -->
+                    <execution>
+                        <id>lab2-client</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab2-client</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab2.client.MainClientUdp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
-            <!-- === Копирование на TFTP (только ЛР-01) === -->
+            <!-- === Копирование на TFTP (ЛР-01 и ЛР-02) === -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -99,8 +142,10 @@
                         <goals><goal>run</goal></goals>
                         <configuration>
                             <target>
-                                <echo message="Копирование JAR ЛР-01 на сервер 172.20.200.40..." />
+                                <echo message="=== Копирование JAR на сервер 172.20.200.40 ===" />
 
+                                <!-- === ЛР-01: TCP === -->
+                                <echo message="Копирование ЛР-01 (TCP)..." />
                                 <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
                                     <arg value="-i"/>
                                     <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
@@ -114,7 +159,22 @@
                                     <arg value="danik@172.20.200.40:/srv/tftp/"/>
                                 </exec>
 
-                                <echo message="JAR файлы ЛР-01 скопированы!" />
+                                <!-- === ЛР-02: UDP === -->
+                                <echo message="Копирование ЛР-02 (UDP)..." />
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab2-server.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab2-client.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+
+                                <echo message="=== Все JAR файлы скопированы! ===" />
                             </target>
                         </configuration>
                     </execution>
