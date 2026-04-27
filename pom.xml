@@ -12,23 +12,169 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     </properties>
 
-
     <dependencies>
-        <!-- SLF4J API -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.17</version>
         </dependency>
-
-        <!-- Logback implementation -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.5.23</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- === Компиляция: исключаем будущие лабы === -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/lab3/**</exclude>
+                        <exclude>**/lab4/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- === Сборка executable JAR (fat-jar) === -->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <!-- ЛР №1: сервер (TCP) -->
+                    <execution>
+                        <id>lab1-server</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab1-server</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab1.server.MainServerTcp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+
+                    <!-- ЛР №1: клиент (TCP) -->
+                    <execution>
+                        <id>lab1-client</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab1-client</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab1.client.MainClientTcp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+
+                    <!-- ЛР №2: сервер (UDP) -->
+                    <execution>
+                        <id>lab2-server</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab2-server</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab2.server.MainServerUdp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+
+                    <!-- ЛР №2: клиент (UDP) -->
+                    <execution>
+                        <id>lab2-client</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab2-client</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab2.client.MainClientUdp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- === Копирование на TFTP === -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <echo message="=== Копирование JAR на сервер 172.20.200.40 ===" />
+
+                                <!-- ЛР-01: TCP -->
+                                <echo message="Копирование ЛР-01 (TCP)..." />
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab1-server.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab1-client.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+
+                                <!-- ЛР-02: UDP -->
+                                <echo message="Копирование ЛР-02 (UDP)..." />
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab2-server.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab2-client.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+
+                                <echo message="=== Все JAR файлы скопированы! ===" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
