@@ -30,27 +30,24 @@
 
     <build>
         <plugins>
-            <!-- === Компиляция: исключаем только будущие лабы === -->
+            <!-- === Компиляция: исключаем будущие лабы === -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
                     <excludes>
-                        <!-- ЛР-02 теперь включена в сборку -->
                         <exclude>**/lab3/**</exclude>
                         <exclude>**/lab4/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>
 
-            <!-- === Сборка JAR с зависимостями (ЛР-01 и ЛР-02) === -->
+            <!-- === Сборка executable JAR (fat-jar) === -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.6.0</version>
                 <executions>
-                    <!-- ================= ЛР-01: TCP ================= -->
-
                     <!-- ЛР №1: сервер (TCP) -->
                     <execution>
                         <id>lab1-server</id>
@@ -88,8 +85,6 @@
                             </archive>
                         </configuration>
                     </execution>
-
-                    <!-- ================= ЛР-02: UDP ================= -->
 
                     <!-- ЛР №2: сервер (UDP) -->
                     <execution>
@@ -131,7 +126,7 @@
                 </executions>
             </plugin>
 
-            <!-- === Копирование на TFTP (ЛР-01 и ЛР-02) === -->
+            <!-- === Копирование на TFTP === -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -144,30 +139,30 @@
                             <target>
                                 <echo message="=== Копирование JAR на сервер 172.20.200.40 ===" />
 
-                                <!-- === ЛР-01: TCP === -->
+                                <!-- ЛР-01: TCP -->
                                 <echo message="Копирование ЛР-01 (TCP)..." />
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
                                     <arg value="-i"/>
                                     <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
                                     <arg value="${project.build.directory}/lab1-server.jar"/>
                                     <arg value="danik@172.20.200.40:/srv/tftp/"/>
                                 </exec>
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
                                     <arg value="-i"/>
                                     <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
                                     <arg value="${project.build.directory}/lab1-client.jar"/>
                                     <arg value="danik@172.20.200.40:/srv/tftp/"/>
                                 </exec>
 
-                                <!-- === ЛР-02: UDP === -->
+                                <!-- ЛР-02: UDP -->
                                 <echo message="Копирование ЛР-02 (UDP)..." />
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
                                     <arg value="-i"/>
                                     <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
                                     <arg value="${project.build.directory}/lab2-server.jar"/>
                                     <arg value="danik@172.20.200.40:/srv/tftp/"/>
                                 </exec>
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe">
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
                                     <arg value="-i"/>
                                     <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
                                     <arg value="${project.build.directory}/lab2-client.jar"/>

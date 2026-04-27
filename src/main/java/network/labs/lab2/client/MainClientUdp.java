@@ -1,28 +1,15 @@
 package network.labs.lab2.client;
 
 import network.labs.lab2.common.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.net.SocketException;
-
-/**
- * Запуск UDP-клиента.
- */
 public class MainClientUdp {
-    private static final Logger log = LoggerFactory.getLogger(MainClientUdp.class);
-
     public static void main(String[] args) {
+        System.out.println("=== Запуск UDP-клиента ЛР-2 ===");
+        System.out.println("Цель: " + Config.SERVER_HOST + ":" + Config.PORT);
         try {
-            log.info("Запуск клиента...");
-            UdpClient client = new UdpClient(Config.SERVER_HOST, Config.PORT);
-            client.start();
-        } catch (SocketException e) {
-            // Соединение закрыто или проблема с сокетом
-            log.info("Соединение закрыто: {}", e.getMessage());
+            new UdpClient(Config.SERVER_HOST, Config.PORT).start();
         } catch (Exception e) {
-            log.error("Ошибка клиента", e);
-            System.exit(1);
+            System.err.println("❌ Ошибка: " + e.getMessage()); e.printStackTrace(); System.exit(1);
         }
     }
 }

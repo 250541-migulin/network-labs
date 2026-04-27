@@ -3,54 +3,28 @@ package network.labs.lab2.common;
 import java.nio.file.Path;
 
 /**
- * Конфигурация приложения ЛР-02 (UDP).
- * Единые правила с ЛР-01 для простоты.
+ * Конфигурация ЛР-2. Пути — абсолютные, для работы в GNS3.
  */
-public class Config {
-
-    // ========================================================================
-    // Сетевые настройки
-    // ========================================================================
-
-    /** Порт для UDP (8888 — независим от TCP) */
+public final class Config {
     public static final int PORT = 8888;
+    public static final String SERVER_HOST = "10.0.0.3"; // IP сервера
 
-    /** Хост сервера по умолчанию */
-    public static final String SERVER_HOST = "10.0.0.3";
+    // Заголовок нашего протокола: 7 байт
+    public static final int HEADER_SIZE = 7;
+    // MTU 1500 - 20(IP) - 8(UDP) - 7(наш) = 1465 байт полезной нагрузки
+    public static final int PAYLOAD_SIZE = 1465;
 
-    // ========================================================================
-    // Надёжность UDP (наши механизмы)
-    // ========================================================================
+    // Надёжный UDP: окно, таймауты, ретрансмиссии
+    public static final int WINDOW_SIZE = 64;
+    public static final int ACK_TIMEOUT_MS = 50;
+    public static final int MAX_RETRIES = 10;
+    public static final int SOCKET_TIMEOUT_MS = 5;
 
-    /** Размер окна отправки (пакетов) — без ожидания ACK */
-    public static final int UDP_WINDOW_SIZE = 256;
+    // Буферы сокетов для высокой пропускной способности
+    public static final int SOCK_BUF_SIZE = 256 * 1024;
 
-    /** Таймаут ожидания ACK (мс) — короткий для неблокирующего режима */
-    public static final int UDP_ACK_TIMEOUT_MS = 1;
-
-    /** Максимальное число попыток отправки пакета */
-    public static final int UDP_MAX_RETRIES = 100;
-
-    /** Размер полезной нагрузки в пакете (байт) */
-    // 1500 (MTU) - 20 (IP) - 8 (UDP) - 7 (наш заголовок) = 1465
-    public static final int UDP_MAX_PAYLOAD = 1465;
-
-    /** Размер буфера сокета (байт) — для высокой пропускной способности */
-    public static final int SOCKET_BUFFER_SIZE = 256 * 1024; // 256 KB
-
-    // ========================================================================
-    // Пути (одинаковые на клиенте и сервере, как в ЛР-01)
-    // ========================================================================
-
-    /** Директория с исходными файлами (для UPLOAD на клиенте, для DOWNLOAD на сервере) */
-    public static final Path SOURCE_DIR = Path.of("/root/files/source");
-
-    /** Директория для временных/загруженных файлов (для DOWNLOAD на клиенте, для UPLOAD на сервере) */
-    public static final Path TMP_DIR = Path.of("/root/files/tmp");
-
-    // ========================================================================
-    // Приватный конструктор — класс не инстанцируется
-    // ========================================================================
+    public static final Path SRC_DIR = Path.of("/root/files/source");
+    public static final Path DST_DIR = Path.of("/root/files/tmp");
 
     private Config() {}
 }
