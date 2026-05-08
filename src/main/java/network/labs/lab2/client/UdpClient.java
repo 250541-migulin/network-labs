@@ -1,6 +1,7 @@
 package network.labs.lab2.client;
 
 import network.labs.lab2.common.Config;
+import network.labs.lab2.common.NetworkUtils;
 import network.labs.lab2.common.UdpPacket;
 import network.labs.lab2.transport.ReliableReceiver;
 import network.labs.lab2.transport.ReliableSender;
@@ -207,10 +208,20 @@ public final class UdpClient {
                 new ReliableSender(sock, server).sendStream(in, rem);
             }
 
-            // Финальный ответ сервера и расчёт скорости
-            System.out.println("Сервер: " + receiveCmd());
-            long elapsed = Math.max(System.currentTimeMillis() - t0, 1);
-            System.out.printf("Скорость: %.1f Мбит/с%n", (rem * 8.0) / elapsed);
+            try { Thread.sleep(100); } catch (InterruptedException ignored) {}
+
+            String finalReply = "таймаут";
+            for (int i = 0; i < 3; i++) {
+                try {
+                    sock.setSoTimeout(300);
+                    finalReply = receiveCmd();
+                    if (!"таймаут".equals(finalReply)) break;
+                } catch (Exception ignored) {}
+            }
+            System.out.println("Сервер: " + finalReply);
+
+            long elapsed = System.currentTimeMillis() - t0;
+            System.out.printf("Скорость: %.1f Мбит/с%n", NetworkUtils.calcSpeedMbps(rem, elapsed));
 
         } catch (Exception e) {
             // Локальная обработка ошибок: вывод сообщения без прерывания программы
@@ -271,9 +282,8 @@ public final class UdpClient {
 
             // Финальный ответ и статистика
             System.out.println("Сервер: " + receiveCmd());
-            long elapsed = Math.max(System.currentTimeMillis() - t0, 1);
-            System.out.printf("Скорость: %.1f Мбит/с | Файл: %s%n",
-                    (rem * 8.0) / elapsed, tgt.getFileName());
+            long elapsed = System.currentTimeMillis() - t0;
+            System.out.printf("Скорость: %.1f Мбит/с%n", NetworkUtils.calcSpeedMbps(rem, elapsed));
 
         } catch (Exception e) {
             System.out.println("Ошибка скачивания: " + e.getMessage());

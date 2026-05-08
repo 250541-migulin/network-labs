@@ -1,6 +1,7 @@
 package network.labs.lab2.transport;
 
 import network.labs.lab2.common.Config;
+import network.labs.lab2.common.NetworkUtils;
 import network.labs.lab2.common.UdpPacket;
 
 import java.io.IOException;
@@ -100,7 +101,10 @@ public final class ReliableReceiver {
             while (received < expected) {
                 // Детект обрыва: если подряд не получено ни одного пакета
                 if (++dropCounter >= Config.MAX_CONSECUTIVE_DROPS) {
-                    throw new SocketTimeoutException("Сессия разорвана: нет пакетов от отправителя");
+                    throw new SocketTimeoutException(
+                            "Сессия разорвана: нет пакетов от отправителя " +
+                                    "в течение ~" + (dropCounter * Config.SOCKET_TIMEOUT_MS) + " мс"
+                    );
                 }
 
                 UdpPacket pkt = readPacket();
@@ -112,6 +116,10 @@ public final class ReliableReceiver {
 
                 // Обработка сигнала завершения передачи
                 if (pkt.isFin()) {
+                    // шлём финальный ACK, чтобы клиент очистил окно
+                    if (nextSeq > 0) {
+                        sendAck(nextSeq - 1);
+                    }
                     break;
                 }
 
@@ -218,7 +226,7 @@ public final class ReliableReceiver {
         if (elapsed <= 0 || cur % (1024 * 1024) != 0) {
             return;
         }
-        double mbps = (cur * 8.0) / elapsed;
+        double mbps = NetworkUtils.calcSpeedMbps(cur, elapsed);
         System.out.printf("\rПринято: %3d%% | %.1f Мбит/с | Вне очереди: %d",
                 (int) (cur * 100 / tot), mbps, ooo);
         if (cur >= tot) {
