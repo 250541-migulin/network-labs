@@ -231,7 +231,7 @@ public final class MultiplexedServer {
         long duration = System.currentTimeMillis() - s.transferStartTime;
         double speed = NetworkUtils.calcSpeedMbps(s.bytesProcessed, duration);
         sendResponse(key, "File uploaded: " + s.filePath.getFileName());
-        log.info("[{}] UPLOAD completed: {} ({} bytes) in {} ms ({:.1f} Mbps)", s.id, s.filePath.getFileName(), s.bytesProcessed, duration, speed);
+        log.info("[{}] UPLOAD completed: {} ({} bytes) in {} ms ({} Mbps)", s.id, s.filePath.getFileName(), s.bytesProcessed, duration, speed);
         s.reset(); key.interestOps(SelectionKey.OP_READ);
     }
 
@@ -239,7 +239,7 @@ public final class MultiplexedServer {
         long duration = System.currentTimeMillis() - s.transferStartTime;
         double speed = NetworkUtils.calcSpeedMbps(s.bytesProcessed, duration);
         sendResponse(key, "File sent: " + s.filePath.getFileName());
-        log.info("[{}] DOWNLOAD completed: {} ({} bytes) in {} ms ({:.1f} Mbps)", s.id, s.filePath.getFileName(), s.bytesProcessed, duration, speed);
+        log.info("[{}] DOWNLOAD completed: {} ({} bytes) in {} ms ({} Mbps)", s.id, s.filePath.getFileName(), s.bytesProcessed, duration, speed);
         s.reset(); key.interestOps(SelectionKey.OP_READ);
     }
 
