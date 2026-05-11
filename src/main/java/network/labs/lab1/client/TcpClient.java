@@ -24,16 +24,20 @@ public final class TcpClient {
     /**
      * Запускает клиент: подключается к серверу и входит в цикл обработки команд.
      */
-    public void start() {
-        try (Socket socket = new Socket(Config.SERVER_HOST, Config.SERVER_PORT)) {
-            System.out.println("Подключено к " + Config.SERVER_HOST + ":" + Config.SERVER_PORT);
+    public void start(String host, int port) {
+        try (Socket socket = new Socket(host, port)) {
+            System.out.println("Подключено к " + host + ":" + port);
+            // Требование ЛР: контроль живучести соединения + таймаут на операции
+            socket.setKeepAlive(true);
+            socket.setSoTimeout(Config.SOCKET_TIMEOUT_MS);
+
             try (InputStream in = socket.getInputStream();
                  OutputStream out = socket.getOutputStream()) {
                 runCommandLoop(in, out);
             }
         } catch (SocketException e) {
-            System.out.println("\nСоединение разорвано: " + e.getMessage());
-            System.out.println("Для продолжения работы запустите клиента заново.");
+            System.out.println("\n Соединение разорвано: " + e.getMessage());
+            System.out.println("Для продолжения запустите клиента заново.");
         } catch (IOException e) {
             System.err.println("Ошибка подключения: " + e.getMessage());
         }
@@ -108,7 +112,7 @@ public final class TcpClient {
      * Протокол обмена:
      * 1. Клиент -> Сервер: UPLOAD <файл> [--force]\r\n
      * 2. Сервер -> Клиент: OK <offset>\r\n
-     * 3. Клиент -> Сервер: <remaining>\r\n          <-- ДОБАВЛЕНО ДЛЯ СИНХРОНИЗАЦИИ
+     * 3. Клиент -> Сервер: <remaining>\r\n
      * 4. Клиент -> Сервер: [бинарные данные файла]
      * 5. Сервер -> Клиент: Финальный ответ\r\n
      */

@@ -19,12 +19,16 @@ public final class MainClientTcp {
      * @param args аргументы командной строки (не используются, настройки в Config)
      */
     public static void main(String[] args) {
+
+        String host = args.length > 0 ? args[0] : Config.SERVER_HOST;
+        int port = args.length > 1 ? Integer.parseInt(args[1]) : Config.SERVER_PORT;
+
         System.out.println("=== Запуск TCP-клиента ЛР-1 ===");
-        System.out.println("Цель: " + Config.SERVER_HOST + ":" + Config.SERVER_PORT);
+        System.out.println("Цель: " + host + ":" + port);
 
         try {
             // start() запускает интерактивный цикл, блокирующий поток до завершения сессии
-            new TcpClient().start();
+            new TcpClient().start(host, port);
         } catch (Exception e) {
             System.err.println("Ошибка запуска клиента: " + e.getMessage());
             // Для отладки можно раскомментировать строку ниже:
