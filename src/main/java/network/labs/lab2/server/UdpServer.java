@@ -1,6 +1,7 @@
 package network.labs.lab2.server;
 
 import network.labs.lab2.common.Config;
+import network.labs.lab2.common.NetworkUtils;
 import network.labs.lab2.common.UdpPacket;
 import network.labs.lab2.transport.ReliableReceiver;
 import network.labs.lab2.transport.ReliableSender;
@@ -177,7 +178,7 @@ public final class UdpServer {
     /**
      * Обрабатывает команду UPLOAD: приём файла от клиента с поддержкой докачки.
      *
-     * Алгоритм:
+     * Алгоритм работы:
      * 1. Проверяет наличие аргумента (имя файла).
      * 2. Определяет, является ли это докачкой:
      *    - тот же клиент (peer.equals(lastClient))
@@ -203,19 +204,25 @@ public final class UdpServer {
         String fname = parts[1];
         Path tgt = Config.DST_DIR.resolve(fname);
 
-        // Проверка условия докачки из ТЗ: тот же клиент + тот же файл + файл существует
-        boolean isResume = peer.equals(lastClient) && fname.equals(lastFile) && Files.exists(tgt);
+        // Сравниваем с ПРЕДЫДУЩИМИ значениями lastClient/lastFile
+        boolean isResume = (peer.equals(lastClient) &&
+                fname.equals(lastFile) &&
+                Files.exists(tgt));
+
         long off = isResume ? Files.size(tgt) : 0;
 
         System.out.println(isResume
                 ? "Докачка (продолжение): " + fname + " с " + off + " байт"
                 : "Новая загрузка: " + fname);
 
+
+        lastClient = peer;
+        lastFile = fname;
+
         reply(peer, "OK " + off);
         String sz = readCmd(peer);
-        if (sz == null) {
-            return;
-        }
+        if (sz == null) return;
+
         long rem = Long.parseLong(sz.trim());
         if (rem <= 0) {
             reply(peer, "Файл уже загружен");
@@ -223,19 +230,31 @@ public final class UdpServer {
         }
         reply(peer, "READY");
 
-        System.out.println("Приём данных...");
-        long t0 = System.currentTimeMillis();
-        try (var out = Files.newOutputStream(tgt, StandardOpenOption.CREATE,
-                off > 0 ? StandardOpenOption.APPEND : StandardOpenOption.WRITE)) {
-            new ReliableReceiver(sock, peer).receiveStream(out, rem);
-        }
-        long elapsed = Math.max(System.currentTimeMillis() - t0, 1);
-        System.out.printf("Принято: %.1f Мбит/с\n", (rem * 8.0) / elapsed);
-        reply(peer, "Файл загружен: " + fname);
+        long totalSize = off + rem;
+        System.out.println("Приём данных: " + fname +
+                " (уже есть: " + off + " байт, осталось: " + rem + " байт, всего: " + totalSize + " байт)...");
 
-        // Обновляем состояние для поддержки последующей докачки
-        lastClient = peer;
-        lastFile = fname;
+        long t0 = System.currentTimeMillis();
+        try {
+            try (var out = Files.newOutputStream(tgt, StandardOpenOption.CREATE,
+                    off > 0 ? StandardOpenOption.APPEND : StandardOpenOption.WRITE)) {
+                new ReliableReceiver(sock, peer).receiveStream(out, rem);
+            }
+
+            String finalMsg = "Файл загружен: " + fname;
+            for (int i = 0; i < 3; i++) {
+                reply(peer, finalMsg);
+                try { Thread.sleep(20); } catch (InterruptedException ignored) {}
+            }
+        } catch (SocketTimeoutException e) {
+            System.out.println("Передача прервана: " + e.getMessage());
+            long receivedSoFar = Files.exists(tgt) ? Files.size(tgt) : 0;
+            int percent = totalSize > 0 ? (int) (receivedSoFar * 100 / totalSize) : 0;
+            System.out.println("Принято до обрыва: " + percent + "% (" + receivedSoFar + "/" + totalSize + " байт)");
+            try {
+                reply(peer, "ERROR: Соединение разорвано");
+            } catch (IOException ignored) {}
+        }
     }
 
     /**
@@ -267,6 +286,7 @@ public final class UdpServer {
             return;
         }
 
+        // Проверка условия докачки: тот же клиент + тот же файл
         boolean isResume = peer.equals(lastClient) && fname.equals(lastFile);
         System.out.println(isResume
                 ? "Докачка (отдача остатка): " + fname
@@ -274,27 +294,46 @@ public final class UdpServer {
 
         reply(peer, "OK");
         String off = readCmd(peer);
-        long skip = off != null ? Long.parseLong(off.trim()) : 0;
-        long rem = Files.size(src) - skip;
+        if (off == null) {
+            return; // Таймаут ожидания offset от клиента
+        }
+        long skip = Long.parseLong(off.trim());
+        long fileSize = Files.size(src);
+        long rem = fileSize - skip;
         reply(peer, String.valueOf(rem));
         if (rem <= 0) {
             reply(peer, "Файл уже актуален");
             return;
         }
 
-        System.out.println("Отправка данных...");
-        long t0 = System.currentTimeMillis();
-        try (var in = Files.newInputStream(src)) {
-            in.skipNBytes(skip);
-            new ReliableSender(sock, peer).sendStream(in, rem);
-        }
-        long elapsed = Math.max(System.currentTimeMillis() - t0, 1);
-        System.out.printf("Отправлено: %.1f Мбит/с\n", (rem * 8.0) / elapsed);
-        reply(peer, "Файл отправлен: " + fname);
+        // Логирование с указанием полного размера файла
+        System.out.println("Отправка данных: " + fname +
+                " (пропущено: " + skip + " байт, осталось: " + rem + " байт, всего: " + fileSize + " байт)...");
 
-        // Обновляем состояние для поддержки последующей докачки
-        lastClient = peer;
-        lastFile = fname;
+        long t0 = System.currentTimeMillis();
+        try {
+            try (var in = Files.newInputStream(src)) {
+                in.skipNBytes(skip);
+                new ReliableSender(sock, peer).sendStream(in, rem);
+            }
+            reply(peer, "Файл отправлен: " + fname);
+
+            // Обновляем состояние только при успешном завершении
+            lastClient = peer;
+            lastFile = fname;
+        } catch (SocketTimeoutException e) {
+            // Обрыв соединения во время передачи
+            System.out.println("Передача прервана: " + e.getMessage());
+            // Логирование процента отправленного до обрыва (приблизительно)
+            int percent = fileSize > 0 ? (int) (skip * 100 / fileSize) : 0;
+            System.out.println("Отправлено до обрыва: " + percent + "% (" + skip + "/" + fileSize + " байт)");
+            // Не сбрасываем lastClient/lastFile — клиент может повторить запрос с тем же offset
+            try {
+                reply(peer, "ERROR: Соединение разорвано");
+            } catch (IOException ignored) {
+                // Игнорируем ошибку отправки ответа при уже разорванном соединении
+            }
+        }
     }
 
     /**

@@ -30,20 +30,20 @@
 
     <build>
         <plugins>
-            <!-- === Компиляция: исключаем будущие лабы === -->
+            <!-- Компиляция: исключаем только lab4 из общей сборки, если нужно -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/lab3/**</exclude>
-                        <exclude>**/lab4/**</exclude>
+                        <!-- Раскомментируйте, если хотите временно исключить lab4 из компиляции -->
+                        <!-- <exclude>**/lab4/**</exclude> -->
                     </excludes>
                 </configuration>
             </plugin>
 
-            <!-- === Сборка executable JAR (fat-jar) === -->
+            <!-- Сборка executable JAR (fat-jar) -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.6.0</version>
@@ -123,10 +123,49 @@
                             </archive>
                         </configuration>
                     </execution>
+
+                    <!-- ЛР №3: сервер (Selector/multiplexing) -->
+                    <execution>
+                        <id>lab3-server</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab3-server</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab3.server.MainServerLab3</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+
+                    <!-- НОВОЕ: ЛР №4: сервер (Пул потоков, вариант 8) -->
+                    <execution>
+                        <id>lab4-server</id>
+                        <phase>package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <finalName>lab4-server</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>network.labs.lab4.server.MainServerTcp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
 
-            <!-- === Копирование на TFTP === -->
+            <!-- Копирование на TFTP-сервер через SCP -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -169,7 +208,25 @@
                                     <arg value="danik@172.20.200.40:/srv/tftp/"/>
                                 </exec>
 
-                                <echo message="=== Все JAR файлы скопированы! ===" />
+                                <!-- ЛР-03: Selector (мультиплексирование) -->
+                                <echo message="Копирование ЛР-03 (Selector)..." />
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab3-server.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+
+                                <!-- ЛР-04: Пул потоков (вариант 8) -->
+                                <echo message="Копирование ЛР-04 (Thread Pool)..." />
+                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
+                                    <arg value="-i"/>
+                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
+                                    <arg value="${project.build.directory}/lab4-server.jar"/>
+                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
+                                </exec>
+
+                                <echo message="Все JAR файлы скопированы!" />
                             </target>
                         </configuration>
                     </execution>

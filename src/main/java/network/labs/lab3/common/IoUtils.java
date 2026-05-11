@@ -1,4 +1,4 @@
-package network.labs.lab1.common;
+package network.labs.lab3.common;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,9 +8,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-public class IoUtils {
+/**
+ * Утилиты для работы с I/O.
+ */
+public final class IoUtils {
     private IoUtils() {}
 
+    /**
+     * Читает строку до \r\n из InputStream.
+     * @return строку без \r\n, или null при достижении конца потока
+     */
     public static String readLine(InputStream in) throws IOException {
         var baos = new java.io.ByteArrayOutputStream();
         int b;
@@ -19,7 +26,6 @@ public class IoUtils {
             if (b == '\r') {
                 int next = in.read();
                 if (next == '\n' || next == -1) break;
-                // next != '\n' && next != -1: байт "теряется", но протокол использует \r\n
                 break;
             }
             baos.write(b);
@@ -29,13 +35,13 @@ public class IoUtils {
     }
 
     public static void writeLine(OutputStream out, String line) throws IOException {
-        out.write((line + "\r\n").getBytes(StandardCharsets.UTF_8));
+        out.write((line + Config.LINE_END).getBytes(StandardCharsets.UTF_8));
         out.flush();
     }
 
     public static long copyStreamToFile(InputStream in, Path target, boolean append, long maxBytes) throws IOException {
         long total = 0;
-        byte[] buf = new byte[8192];
+        byte[] buf = new byte[Config.BUFFER_SIZE];
         try (var fos = Files.newOutputStream(target, StandardOpenOption.CREATE,
                 append ? StandardOpenOption.APPEND : StandardOpenOption.WRITE)) {
             while (total < maxBytes) {
@@ -51,7 +57,7 @@ public class IoUtils {
 
     public static long copyFileToStream(Path source, OutputStream out, long skip) throws IOException {
         long total = 0;
-        byte[] buf = new byte[8192];
+        byte[] buf = new byte[Config.BUFFER_SIZE];
         long remaining = Files.size(source) - skip;
         try (var fis = Files.newInputStream(source)) {
             fis.skipNBytes(skip);

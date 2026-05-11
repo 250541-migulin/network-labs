@@ -1,43 +1,36 @@
 package network.labs.lab1.server;
 
 import network.labs.lab1.common.Config;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.BindException;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 
 /**
- * Точка входа сервера ЛР-01.
- *
- * Запускает TcpServer в отдельном потоке. Основной поток блокируется на
- * server.start(), который принимает подключения и обрабатывает клиентов
- * последовательно (один за раз).
- *
- * Обработка ошибок:
- * - UnknownHostException: неверный адрес в конфиге — фатальная ошибка
- * - SocketException: проблемы с сокетом — логируем и выходим
- * - Другие исключения: полная трассировка в лог и аварийное завершение
+ * Точка входа TCP-сервера для Лабораторной работы №1.
+ * Инициализирует серверный компонент и запускает его в основном потоке.
+ * Сервер работает до принудительной остановки или фатальной ошибки инициализации.
  */
-public class MainServerTcp {
-    private static final Logger log = LoggerFactory.getLogger(MainServerTcp.class);
+public final class MainServerTcp {
 
+    // Приватный конструктор предотвращает создание экземпляров
+    private MainServerTcp() {}
+
+    /**
+     * Основной метод приложения.
+     * Выводит информацию о запуске, создаёт экземпляр сервера и передаёт управление.
+     * При ошибке привязки сокета (порт занят, нет прав) выводит сообщение и завершает работу.
+     *
+     * @param args аргументы командной строки (не используются, настройки в Config)
+     */
     public static void main(String[] args) {
-        log.debug("main: вход в точку входа сервера");
-        log.info("Запуск сервера...");
+        System.out.println("=== Запуск TCP-сервера ЛР-1 ===");
+        System.out.println("Порт: " + Config.SERVER_PORT);
 
         try {
-            log.debug("main: создание экземпляра TcpServer");
-            TcpServer server = new TcpServer();
-
-            log.debug("main: вызов server.start() — блокирующий режим");
-            server.start(); // Блокирующий вызов
-
-            log.debug("main: server.start() завершён (сервер остановлен)");
-
+            // start() блокирует поток и работает в бесконечном цикле приёма подключений
+            new TcpServer().start();
         } catch (Exception e) {
-            log.error("Непредвиденная ошибка сервера", e);
+            // Фатальные ошибки инициализации (например, BindException при занятом порте)
+            System.err.println("Ошибка запуска сервера: " + e.getMessage());
+            // Для отладки в GNS3 можно раскомментировать строку ниже:
+            // e.printStackTrace();
             System.exit(1);
         }
     }

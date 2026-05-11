@@ -1,6 +1,7 @@
 package network.labs.lab2.transport;
 
 import network.labs.lab2.common.Config;
+import network.labs.lab2.common.NetworkUtils;
 import network.labs.lab2.common.UdpPacket;
 
 import java.io.IOException;
@@ -57,6 +58,8 @@ public final class ReliableSender {
 
     /** Счётчик ретрансмиссий (для отладки/статистики) */
     private long retx = 0;
+
+    private boolean progressFinished = false;
 
     /**
      * Создаёт отправитель для работы с указанным сокетом и удалённым адресом.
@@ -200,7 +203,11 @@ public final class ReliableSender {
         }
         // Детект обрыва: если самый старый пакет исчерпал попытки
         if (!win.isEmpty() && win.peek().retries >= Config.MAX_CONSECUTIVE_DROPS) {
-            throw new SocketTimeoutException("Сессия разорвана: нет подтверждения от получателя");
+            int attempts = win.peek().retries;
+            throw new SocketTimeoutException(
+                    "Сессия разорвана: нет ACK после " + attempts +
+                            " попыток (таймаут " + Config.ACK_TIMEOUT_MS + " мс)"
+            );
         }
     }
 
@@ -217,17 +224,18 @@ public final class ReliableSender {
      * @param start время начала передачи (в миллисекундах)
      */
     private void printProgress(long cur, long tot, long start) {
-        long elapsed = System.currentTimeMillis() - start;
-        // Обновляем прогресс только каждые 1 МБ и если прошло достаточно времени
-        if (elapsed <= 0 || cur % (1024 * 1024) != 0) {
+        if (cur >= tot && !progressFinished) {
+            long elapsed = Math.max(System.currentTimeMillis() - start, 1);
+            double mbps = NetworkUtils.calcSpeedMbps(cur, elapsed);
+            System.out.printf("Отправлено: 100%% | %.1f Мбит/с | Ретрансмиссий: %d%n", mbps, retx);
+            progressFinished = true;
             return;
         }
-        double mbps = (cur * 8.0) / elapsed;
+        long elapsed = System.currentTimeMillis() - start;
+        if (elapsed <= 0 || cur % (1024 * 1024) != 0) return;
+        double mbps = NetworkUtils.calcSpeedMbps(cur, elapsed);
         System.out.printf("\rОтправлено: %3d%% | %.1f Мбит/с | Ретрансмиссий: %d",
                 (int) (cur * 100 / tot), mbps, retx);
-        if (cur >= tot) {
-            System.out.println();
-        }
     }
 
     // ========================================================================
