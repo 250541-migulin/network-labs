@@ -42,13 +42,13 @@ public final class Config {
      * Директория с файлами для скачивания (команда DOWNLOAD).
      * Сервер читает файлы отсюда.
      */
-    public static final Path SOURCE_DIR = Path.of("/root/files/source");
+    public static final Path SOURCE_DIR = Path.of("files/source");
 
     /**
      * Директория для сохранения загруженных файлов (команда UPLOAD).
      * Сервер пишет файлы сюда.
      */
-    public static final Path TMP_DIR = Path.of("/root/files/tmp");
+    public static final Path TMP_DIR = Path.of("files/tmp");
 
     /**
      * Формат времени, используемый в команде TIME.

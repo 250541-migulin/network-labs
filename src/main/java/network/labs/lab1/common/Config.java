@@ -43,14 +43,14 @@ public final class Config {
      * Path.of() корректно обрабатывает разделители (/ или \) под любой ОС.
      * При необходимости замените на абсолютный путь вашей системы.
      */
-    public static final Path SOURCE_DIR = Path.of("/root/files/source");
+    public static final Path SOURCE_DIR = Path.of("files/source");
 
     /**
      * Директория для сохранения принятых файлов.
      * Server: куда сохраняются загруженные файлы.
      * Client: куда сохраняются скачанные файлы.
      */
-    public static final Path TMP_DIR = Path.of("/root/files/tmp");
+    public static final Path TMP_DIR = Path.of("files/tmp");
 
     /**
      * Формат времени для команды time

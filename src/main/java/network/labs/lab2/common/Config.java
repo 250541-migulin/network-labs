@@ -118,10 +118,10 @@ public final class Config {
     // ========================================================================
 
     /** Директория с исходными файлами для отправки (сервер) / загрузки (клиент). */
-    public static final Path SRC_DIR = Path.of("/root/files/source");
+    public static final Path SRC_DIR = Path.of("files/source");
 
     /** Директория для сохранения принятых файлов. */
-    public static final Path DST_DIR = Path.of("/root/files/tmp");
+    public static final Path DST_DIR = Path.of("files/tmp");
 
     // ========================================================================
     // Служебные

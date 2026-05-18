@@ -7,10 +7,11 @@
     <groupId>network.labs</groupId>
     <artifactId>SocketLabs</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     </properties>
@@ -30,16 +31,15 @@
 
     <build>
         <plugins>
-            <!-- Компиляция: исключаем только lab4 из общей сборки, если нужно -->
+            <!-- Компиляция под Java 17 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <excludes>
-                        <!-- Раскомментируйте, если хотите временно исключить lab4 из компиляции -->
-                        <!-- <exclude>**/lab4/**</exclude> -->
-                    </excludes>
+                    <source>17</source>
+                    <target>17</target>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 
@@ -124,7 +124,7 @@
                         </configuration>
                     </execution>
 
-                    <!-- ЛР №3: сервер (Selector/multiplexing) -->
+                    <!-- ЛР №3: сервер (Selector) -->
                     <execution>
                         <id>lab3-server</id>
                         <phase>package</phase>
@@ -143,7 +143,7 @@
                         </configuration>
                     </execution>
 
-                    <!-- НОВОЕ: ЛР №4: сервер (Пул потоков, вариант 8) -->
+                    <!-- ЛР №4: сервер (Thread Pool) -->
                     <execution>
                         <id>lab4-server</id>
                         <phase>package</phase>
@@ -159,75 +159,6 @@
                                     <mainClass>network.labs.lab4.server.MainServerTcp</mainClass>
                                 </manifest>
                             </archive>
-                        </configuration>
-                    </execution>
-
-                </executions>
-            </plugin>
-
-            <!-- Копирование на TFTP-сервер через SCP -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals><goal>run</goal></goals>
-                        <configuration>
-                            <target>
-                                <echo message="=== Копирование JAR на сервер 172.20.200.40 ===" />
-
-                                <!-- ЛР-01: TCP -->
-                                <echo message="Копирование ЛР-01 (TCP)..." />
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab1-server.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab1-client.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
-
-                                <!-- ЛР-02: UDP -->
-                                <echo message="Копирование ЛР-02 (UDP)..." />
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab2-server.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab2-client.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
-
-                                <!-- ЛР-03: Selector (мультиплексирование) -->
-                                <echo message="Копирование ЛР-03 (Selector)..." />
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab3-server.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
-
-                                <!-- ЛР-04: Пул потоков (вариант 8) -->
-                                <echo message="Копирование ЛР-04 (Thread Pool)..." />
-                                <exec executable="C:/Program Files/Git/usr/bin/scp.exe" failonerror="true">
-                                    <arg value="-i"/>
-                                    <arg value="C:/Users/migulin/.ssh/id_ed25519"/>
-                                    <arg value="${project.build.directory}/lab4-server.jar"/>
-                                    <arg value="danik@172.20.200.40:/srv/tftp/"/>
-                                </exec>
-
-                                <echo message="Все JAR файлы скопированы!" />
-                            </target>
                         </configuration>
                     </execution>
                 </executions>

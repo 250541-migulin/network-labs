@@ -26,8 +26,8 @@ public final class Config {
     public static final String LINE_END = "\r\n";
 
     // Пути к директориям с файлами
-    public static final Path SOURCE_DIR = Path.of("/root/files/source");
-    public static final Path TMP_DIR = Path.of("/root/files/tmp");
+    public static final Path SOURCE_DIR = Path.of("files/source");
+    public static final Path TMP_DIR = Path.of("files/tmp");
 
     // Формат времени для команды TIME
     public static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
